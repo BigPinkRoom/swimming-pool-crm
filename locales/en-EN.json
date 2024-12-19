@@ -1,0 +1,205 @@
+{
+  "pages": {
+    "main": {
+      "title": "Main"
+    },
+    "login": {
+      "title": "Sign in"
+    },
+    "signup": {
+      "title": "Sign up"
+    },
+    "logout": {
+      "title": "Logout"
+    },
+    "profile": {
+      "title": "Profile"
+    }
+  },
+  "forms": {
+    "login": {
+      "title": "Login",
+      "fields": {
+        "branch": {
+          "title": "Branch",
+          "placeholder": "Select branch"
+        },
+        "email": {
+          "title": "Email",
+          "placeholder": "Enter your email"
+        },
+        "password": {
+          "title": "Password",
+          "placeholder": "Enter your password"
+        }
+      },
+      "submit": "Login"
+    },
+    "signup": {
+      "title": "Signup",
+      "fields": {
+        "branch": {
+          "title": "Branch",
+          "placeholder": "Select branch"
+        },
+        "email": {
+          "title": "Email",
+          "placeholder": "Enter your email"
+        },
+        "password": {
+          "title": "Password",
+          "placeholder": "Enter your password"
+        },
+        "passwordConfirm": {
+          "title": "Confirm password",
+          "placeholder": "Enter your password again"
+        },
+        "surname": {
+          "title": "Surname",
+          "placeholder": "Enter your surname"
+        },
+        "name": {
+          "title": "Name",
+          "placeholder": "Enter your name"
+        },
+        "patronymic": {
+          "title": "Patronymic",
+          "placeholder": "Enter your patronymic"
+        }
+      },
+      "submit": "Sign up"
+    },
+    "client": {
+      "add": {
+        "title": "Add new family",
+        "fieldsets": {
+          "client": {
+            "label": "Client",
+            "fields": {
+              "surname": {
+                "label": "Surname",
+                "placeholder": "Ivanov"
+              },
+              "name": {
+                "label": "Name",
+                "placeholder": "Ivan"
+              },
+              "patronymic": {
+                "label": "Patronymic",
+                "placeholder": "Ivanovich"
+              },
+              "birthday": {
+                "label": "Birthday",
+                "placeholder": "01.01.2018"
+              }
+            }
+          },
+          "relatives": {
+            "label": "Parents",
+            "fields": {
+              "name": {
+                "label": "Name",
+                "placeholder": "Helen"
+              },
+              "type": {
+                "label": "Relative type",
+                "options": {
+                  "mother": "Mother",
+                  "father": "Father",
+                  "other": "Other relative"
+                }
+              },
+              "telephone": {
+                "label": "Telephone number",
+                "placeholder": "+79001234567"
+              }
+            }
+          },
+          "abonement": {
+            "label": "Abonement",
+            "fields": {
+              "type": {
+                "new": {
+                  "label": "New"
+                },
+                "existed": {
+                  "label": "Existed"
+                }
+              },
+              "id": {
+                "label": "Abonement id"
+              },
+              "quantity": {
+                "label": "Quantity of visits"
+              },
+              "startDate": { "label": "Start date" },
+              "endDate": { "label": "Expiration date" }
+            }
+          }
+        },
+        "fields": {
+          "addOneMoreClient": {
+            "label": "+ one more child"
+          },
+          "abonementBinding": {
+            "label": "Bind abonement"
+          }
+        }
+      },
+      "edit": {
+        "title": "Family edit",
+        "fieldsets": {
+          "client": {
+            "label": "Client",
+            "fields": {
+              "name": {
+                "label": "Client name",
+                "placeholder": "Enter name"
+              },
+              "surname": {
+                "label": "Client surname",
+                "placeholder": "Enter surname"
+              },
+              "patronymic": {
+                "label": "Client patronymic",
+                "placeholder": "Enter patronymic"
+              }
+            }
+          },
+          "relatives": {
+            "label": "Relatives"
+          },
+          "abonement": {
+            "label": "Active abonements"
+          }
+        },
+        "fields": {}
+      }
+    }
+  },
+  "tables": {
+    "abonementTableFull": {
+      "title": "Table of abonements",
+      "columns": {
+        "dateStart": {
+          "title": "Activation date"
+        },
+        "dateEnd": {
+          "title": "Expiration date"
+        },
+        "clients": {
+          "title": "Clients"
+        },
+        "visitsQuantity": {
+          "title": "All visits"
+        },
+        "visitsLeft": {
+          "title": "Left visits"
+        },
+        "number": {
+          "title": "Number"
+        }
+      }
+    }
+  }
+}

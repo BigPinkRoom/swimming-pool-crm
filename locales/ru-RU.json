@@ -1,0 +1,205 @@
+{
+  "pages": {
+    "main": {
+      "title": "Главная"
+    },
+    "login": {
+      "title": "Вход"
+    },
+    "signup": {
+      "title": "Регистрация"
+    },
+    "logout": {
+      "title": "Выйти"
+    },
+    "profile": {
+      "title": "Профиль"
+    }
+  },
+  "forms": {
+    "login": {
+      "title": "Войти",
+      "fields": {
+        "branch": {
+          "title": "Филиал",
+          "placeholder": "Выберите филиал"
+        },
+        "email": {
+          "title": "Email",
+          "placeholder": "Введите ваш email"
+        },
+        "password": {
+          "title": "Пароль",
+          "placeholder": "Введите ваш пароль"
+        }
+      },
+      "submit": "Войти"
+    },
+    "signup": {
+      "title": "Регистрация",
+      "fields": {
+        "branch": {
+          "title": "Филиал",
+          "placeholder": "Выберите филиал"
+        },
+        "email": {
+          "title": "Email",
+          "placeholder": "Введите ваш email"
+        },
+        "password": {
+          "title": "Пароль",
+          "placeholder": "Введите ваш пароль"
+        },
+        "passwordConfirm": {
+          "title": "Подтверждение пароля",
+          "placeholder": "Введите ваш пароль ещё раз"
+        },
+        "surname": {
+          "title": "Фамилия",
+          "placeholder": "Введите вашу фамилию"
+        },
+        "name": {
+          "title": "Имя",
+          "placeholder": "Введите ваше имя"
+        },
+        "patronymic": {
+          "title": "Отчество",
+          "placeholder": "Введите ваше отчество"
+        }
+      },
+      "submit": "Зарегистрироваться"
+    },
+    "client": {
+      "add": {
+        "title": "Добавить семью",
+        "fieldsets": {
+          "client": {
+            "label": "Дети",
+            "fields": {
+              "surname": {
+                "label": "Фамилия",
+                "placeholder": "Иванов"
+              },
+              "name": {
+                "label": "Имя",
+                "placeholder": "Иван"
+              },
+              "patronymic": {
+                "label": "Отчество",
+                "placeholder": "Иванович"
+              },
+              "birthday": {
+                "label": "День рождения",
+                "placeholder": "01.01.2018"
+              }
+            }
+          },
+          "relatives": {
+            "label": "Родители",
+            "fields": {
+              "name": {
+                "label": "Имя",
+                "placeholder": "Елена"
+              },
+              "type": {
+                "label": "Тип родителя",
+                "options": {
+                  "mother": "Мама",
+                  "father": "Папа",
+                  "other": "Другой"
+                }
+              },
+              "telephone": {
+                "label": "Номер телефона",
+                "placeholder": "+79001234567"
+              }
+            }
+          },
+          "abonement": {
+            "label": "Абонемент",
+            "fields": {
+              "type": {
+                "new": {
+                  "label": "Новый"
+                },
+                "existed": {
+                  "label": "Существующий"
+                }
+              },
+              "id": {
+                "label": "№ абонемента"
+              },
+              "quantity": {
+                "label": "Кол-во занятий"
+              },
+              "startDate": { "label": "Дата начала" },
+              "endDate": { "label": "Дата окончания" }
+            }
+          }
+        },
+        "fields": {
+          "addOneMoreClient": {
+            "label": "+ ещё один ребенок"
+          },
+          "abonementBinding": {
+            "label": "Привязать абонемент"
+          }
+        }
+      },
+      "edit": {
+        "title": "Редактировать семью",
+        "fieldsets": {
+          "client": {
+            "label": "Клиент",
+            "fields": {
+              "name": {
+                "label": "Имя клиента",
+                "placeholder": "Введите имя"
+              },
+              "surname": {
+                "label": "Фамилия клиента",
+                "placeholder": "Введите фамилию"
+              },
+              "patronymic": {
+                "label": "Отчество клиента",
+                "placeholder": "Введите отчество"
+              }
+            }
+          },
+          "relatives": {
+            "label": "Родственники"
+          },
+          "abonement": {
+            "label": "Абонементы"
+          }
+        },
+        "fields": {}
+      }
+    }
+  },
+  "tables": {
+    "abonementTableFull": {
+      "title": "Таблица абонементов",
+      "columns": {
+        "dateStart": {
+          "title": "Дата активации"
+        },
+        "dateEnd": {
+          "title": "Осталось занятий"
+        },
+        "clients": {
+          "title": "Ф.И. Ребенка"
+        },
+        "visitsQuantity": {
+          "title": "Всего занятий"
+        },
+        "visitsLeft": {
+          "title": "№ абонемента"
+        },
+        "number": {
+          "title": "Номер"
+        }
+      }
+    }
+  }
+}
