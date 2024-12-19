@@ -1,8 +1,7 @@
-<script setup>
-</script>
+<script setup></script>
 
 <template>
-    <div>
-      <HeaderNavbar/>
-    </div>
+  <div>
+    <HeaderNavbar />
+  </div>
 </template>
