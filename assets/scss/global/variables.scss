@@ -1,0 +1,62 @@
+$max-xs: 420px;
+$max-sm: 540px;
+$max-md: 960px;
+$max-lg: 1200px;
+
+$color-white: #ffffff;
+
+$color-green-lighter: #eef6ec;
+$color-green-light: #c2ddbc;
+$color-green: #23850e;
+
+$color-pink: #7b0d55;
+$color-pink-light: #dabcd0;
+$color-pink-light-extra: #f5ecf2;
+
+$color-gray: #454545;
+$color-gray-light: #646464;
+$color-gray-light-2: #a2a2a2;
+$color-gray-lighter: #cbcbcb;
+$color-gray-light-extra: #cbcbcb;
+$color-gray-lightest: #f3f3f3;
+
+$color-red: #bc0038;
+
+:root {
+  --color-main-lighter: #{$color-green-lighter};
+  --color-main-light: #{$color-green-light};
+  --color-main: #{$color-green};
+
+  --color-main-secondary: #{$color-pink};
+  --color-main-secondary-light: #{$color-pink-light};
+  --color-main-secondary-light-extra: #{$color-pink-light-extra};
+
+  --color-main-tertiary: #{$color-gray};
+  --color-main-tertiary-light: #{$color-gray-light};
+  --color-main-tertiary-light-2: #{$color-gray-light-2};
+  --color-main-tertiary-lighter: #{$color-gray-lighter};
+  --color-main-tertiary-light-extra: #{$color-gray-light-extra};
+  --color-main-tertiary-lightest: #{$color-gray-lightest};
+
+  --color-secondary: #{$color-gray};
+
+  --color-tertiary: #{$color-white};
+
+  --color-warning: #{$color-red};
+
+  --color-white: #{$color-white};
+
+  @media screen {
+    &[data-theme='dark'] {
+      // --color-main-lighter: #{$color-main-lighter};
+      // --color-main-light: #{$color-main-light};
+      // --color-main: #{$color-main-lighter};
+
+      // --color-secondary: #{$color-gray};
+
+      // --color-tertiary: #{$color-white};
+
+      // --color-warning: #{$color-warning};
+    }
+  }
+}
