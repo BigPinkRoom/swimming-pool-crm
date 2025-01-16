@@ -1,7 +1,6 @@
 <script setup></script>
 
 <template>
-  <div>
-    <HeaderNavbar />
-  </div>
+  <HeaderNavbar />
+  <NuxtPage />
 </template>
