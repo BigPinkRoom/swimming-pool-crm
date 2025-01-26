@@ -1,3 +1,26 @@
+<script setup>
+import vSelect from "@/components/ui/Selects/Select";
+import vInput from "@/components/ui/Fields/Input";
+import { uuid } from "vue-uuid";
+
+const uuidV4 = uuid.v4();
+
+const props = defineProps({
+  branchOptionsList: {
+    type: Array,
+    default() {
+      return [];
+    },
+  },
+});
+
+const emit = defineEmits(["formSubmit"]);
+
+const emitSubmit = function (event) {
+  emit("formSubmit", event);
+};
+</script>
+
 <template>
   <form class="form" @submit.prevent="emitSubmit">
     <h1 class="form__title">{{ $t("forms.signup.title") }}</h1>
@@ -9,7 +32,7 @@
       <v-select
         :id="`signup-branch-select_${uuidV4}`"
         :placeholder="$t('forms.signup.fields.branch.placeholder')"
-        :options-list="branchOptionsList"
+        :options-list="props.branchOptionsList"
         name="branch"
       />
     </div>
@@ -88,17 +111,6 @@
     <v-input type="submit" :value="$t('forms.signup.submit')" />
   </form>
 </template>
-<script setup>
-import vSelect from "@/components/ui/Selects/Select";
-import vInput from "@/components/ui/Fields/Input";
-import { uuid } from "vue-uuid";
-
-const uuidV4 = uuid.v4();
-
-const emitSubmit = function (event) {
-  $emit("formSubmit", event);
-};
-</script>
 <style lang="scss" scoped>
 .form {
   display: flex;
