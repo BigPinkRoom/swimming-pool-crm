@@ -11,9 +11,21 @@ export default class Branches {
         params.sortings = [{ name: "branch_id", type: "ASC" }];
       }
 
-      const response = (await this.context.$api.branches.get(params)) || null;
+      const response =
+        (await this.context.$api.branches.get({ params })) || null;
 
-      return response;
+      const branchesSelectModel = response.map((branch) => {
+        console.log('branch', branch)
+        return {
+          idName: "branch-options",
+          value: branch.branch_id,
+          text: branch.name,
+          disabled: false,
+          selected: false,
+        };
+      });
+
+      return branchesSelectModel;
     } catch (error) {
       // this.context.$showError(error);
       console.log("api branches error", error);
