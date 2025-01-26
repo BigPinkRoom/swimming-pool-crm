@@ -5,9 +5,7 @@ export default class Branches {
 
   async get(params) {
     try {
-      const response = await useApi("branches/list", "POST", {
-        params,
-      });
+      const response = await useApi("branches/list", "POST", params);
 
       return response;
     } catch (error) {
