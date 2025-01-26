@@ -1,13 +1,33 @@
 <script setup>
+import { useBranchesStore } from "@/stores/branchStore";
+
 const { $services } = useNuxtApp();
 
-const branches = await $services.branches.get();
+const branchesSelectValues = useBranchesStore().branches;
+
+const formSubmitHandler = async (eventForm) => {
+  $services.user.create(eventForm.target.elements);
+};
+
+const createModelSignup = (fields) => {
+  const model = {};
+
+  const fieldsArray = Array.from(fields);
+
+  fieldsArray.forEach((item) => {
+    if (item.name) {
+      model[item.name] = item.value;
+    }
+  });
+
+  return model;
+};
 </script>
 
 <template>
   <div class="container">
     <FormsSignUp
-      :branch-options-list="branchesSelectList"
+      :branch-options-list="branchesSelectValues"
       @formSubmit="formSubmitHandler"
     />
   </div>
