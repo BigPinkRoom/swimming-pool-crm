@@ -4,8 +4,13 @@ export default class User {
   }
 
   async signup(params) {
-    console.log("signup params!!!", params);
-    return await useApi("auth/signup", "POST", params);
+    try {
+      const response = await useApi("auth/signup", "POST", params);
+
+      return response;
+    } catch (error) {
+      console.log("error", error);
+    }
   }
 
   // TODO remove (here need to only api)?
