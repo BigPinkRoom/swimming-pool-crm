@@ -67,6 +67,31 @@
           "placeholder": "Enter your patronymic"
         }
       },
+      "validationErrors": {
+        "Email:required": "Field 'Email' should not be empty",
+        "Email:validEmail": "Field 'Email' must be in the format  email@email.com",
+        "Email:string": "Field 'Email' must be in string format",
+        "Password:required": "Field 'Password' should not be empty",
+        "Password:string": "Field 'Password' must be in string format",
+        "Password:pattern": "Field 'Password' must have at least 8 characters. At least 1 large number, 1 large letter (Latin), 1 small letter and one symbol ('!@#$%^&*')",
+        "PasswordConfirm:required": "Field 'Password confirm' should not be empty",
+        "PasswordConfirm:string": "Field 'Password confirm' must be in string format",
+        "PasswordConfirm:match": "Field 'Password' and the 'Confirm password' field must match",
+        "Surname:required": "Field 'Surname' should not be empty",
+        "Surname:string": "Field 'Surname' must be in string format",
+        "Surname:pattern": "Field 'Surname' must be at least 2 letters long and at most 100 letters long",
+        "Name:required": "Field 'Name' should not be empty",
+        "Name:string": "Field 'Name' must be in string format",
+        "Name:pattern": "Field 'Name' must be at least 2 letters long and at most 100 letters long",
+        "Patronymic:required": "Field 'Patronymic' should not be empty",
+        "Patronymic:string": "Field 'Patronymic' must be in string format",
+        "Patronymic:pattern": "Field 'Patronymic' must be at least 2 letters long and at most 100 letters long",
+        "Branch:required": "Field 'Branch' should not be empty",
+        "Branch:integer": "Field 'Branch' must be in digital format",
+        "Branch:min": "Field 'Branch' must be no less than the value '1'",
+        "Branch:max": "Field 'Branch' must be no less than the value '5000'"
+      },
+      "User:created": "User { userEmail } was successfully created",
       "submit": "Sign up"
     },
     "client": {
