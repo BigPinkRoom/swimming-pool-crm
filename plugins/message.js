@@ -1,14 +1,13 @@
-// export default ({ store }, inject) => {
-//   inject('showMessage', (message) => {
-//     store.commit('messages/add', {
-//       message,
-//     });
-//   });
+import { useMessageStore } from "@/stores/messageStore";
 
-//   inject('showError', (message) => {
-//     store.commit('messages/add', {
-//       message,
-//       type: 'error',
-//     });
-//   });
-// };
+export default defineNuxtPlugin((nuxtApp) => {
+  const messageStore = useMessageStore();
+
+  nuxtApp.provide("showMessage", (message) => {
+    messageStore.add({ message });
+  });
+
+  nuxtApp.provide("showError", (message) => {
+    messageStore.add({ message, type: "error" });
+  });
+});
