@@ -15,7 +15,7 @@ export default class Branches {
 
       return response;
     } catch (error) {
-      // this.context.$showError(error);
+      this.context.$showError(error);
       console.log("api branches error", error);
     }
   }

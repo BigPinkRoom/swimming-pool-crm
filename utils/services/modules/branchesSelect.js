@@ -15,7 +15,6 @@ export default class Branches {
         (await this.context.$api.branches.get({ params })) || null;
 
       const branchesSelectModel = response.map((branch) => {
-        console.log('branch', branch)
         return {
           idName: "branch-options",
           value: branch.branch_id,
@@ -27,7 +26,7 @@ export default class Branches {
 
       return branchesSelectModel;
     } catch (error) {
-      // this.context.$showError(error);
+      this.context.$showError(error);
       console.log("api branches error", error);
     }
   }
