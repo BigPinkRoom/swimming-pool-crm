@@ -21,17 +21,18 @@ export default class User {
 
       const userEmail = response?.userEmail || null;
 
-      if (response?.userEmail) {
-        // TODO. Сделать через юзера в сторе
-        this.context.$showMessage(
-          this.t(`forms.signup.${response.message}`, { userEmail })
-        );
-      }
+      this.context.$showMessage(
+        this.t(`forms.signup.${response.message}`, { userEmail })
+      );
 
       return response;
     } catch (error) {
-      this.context.$showError(error);
-      console.log("api branches error", error);
+      this.context.$showError(
+        this.t(
+          `forms.signup.validationErrors.${error.value?.data.error.message}`,
+          { userEmail: error.value?.data.error.userEmail }
+        )
+      );
     }
   }
 }

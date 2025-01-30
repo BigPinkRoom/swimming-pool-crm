@@ -14,14 +14,12 @@ export async function useApi(urlPath, method, params) {
     });
 
     if (error.value) {
-      $showError(
-        t(`forms.signup.validationErrors.${error.value?.data.error.message}`)
-      );
+      throw error;
     }
 
     return data?.value;
   } catch (error) {
-    console.log("error", error);
+    throw error;
   }
 
   return;

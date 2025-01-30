@@ -89,7 +89,8 @@
         "Branch:required": "Field 'Branch' should not be empty",
         "Branch:integer": "Field 'Branch' must be in digital format",
         "Branch:min": "Field 'Branch' must be no less than the value '1'",
-        "Branch:max": "Field 'Branch' must be no less than the value '5000'"
+        "Branch:max": "Field 'Branch' must be no less than the value '5000'",
+        "User:isExist": "User { userEmail } already exist"
       },
       "User:created": "User { userEmail } was successfully created",
       "submit": "Sign up"

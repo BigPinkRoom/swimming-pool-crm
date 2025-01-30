@@ -9,7 +9,7 @@ export default class User {
 
       return response;
     } catch (error) {
-      console.log("error", error);
+      throw error;
     }
   }
 
