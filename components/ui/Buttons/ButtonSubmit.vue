@@ -1,10 +1,17 @@
 <template>
-  <input type="submit" value="text" :id="id" @click="clickHandler" class="button" :class="styleType" />
+  <input
+    type="submit"
+    :value="text"
+    :id="id"
+    @click="clickHandler"
+    class="button"
+    :class="styleType"
+  />
 </template>
 
 <script>
 export default {
-  name: 'Button',
+  name: "Button",
   props: {
     id: {
       type: [String, Number],
@@ -19,7 +26,7 @@ export default {
   },
   methods: {
     clickHandler() {
-      this.$emit('click');
+      this.$emit("click");
     },
   },
 };
