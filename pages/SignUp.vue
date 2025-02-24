@@ -8,20 +8,6 @@ const branchesSelectValues = useBranchesStore().branches;
 const formSubmitHandler = async (eventForm) => {
   $services.user.create(eventForm.target.elements);
 };
-
-const createModelSignup = (fields) => {
-  const model = {};
-
-  const fieldsArray = Array.from(fields);
-
-  fieldsArray.forEach((item) => {
-    if (item.name) {
-      model[item.name] = item.value;
-    }
-  });
-
-  return model;
-};
 </script>
 
 <template>
