@@ -1,8 +1,13 @@
 <script setup>
 const { locale, locales } = useI18n();
+const { $services } = useNuxtApp();
 
 import { routesConstants } from "@/constants/routes";
 import { rolesConstants } from "@/constants/roles";
+
+const logoutUser = function () {
+  $services.user.logout();
+};
 
 // Роуты-ссылки для главного горизонтального меню
 const menuRoutes = [
@@ -28,7 +33,7 @@ const menuRoutes = [
   {
     name: routesConstants.LOGOUT_ROUTE_NAME,
     forRoles: [rolesConstants.EMPLOYEE_ROLE_NAME],
-    // action: this.logout,
+    action: logoutUser,
     disabledRouteEvent: true,
   },
 ];
@@ -38,19 +43,20 @@ const checkedRoutes = computed(() => {
   const checkedRoutes = [];
 
   menuRoutes.forEach((route) => {
-    //   let check = false;
+    let check = false;
 
-    //   if (this.$auth.loggedIn) {
-    //     check = route.forRoles.find((role) => role === this.$auth.user.user_role);
-    //   }
+    // if (loggedIn) {
+    //   check = route.forRoles.find((role) => role === user.user_role);
+    // }
 
-    //   if (!this.$auth.loggedIn) {
-    //     check = route.forRoles.find((role) => role === "guest");
-    //   }
+    // if (!loggedIn) {
+    //   check = route.forRoles.find((role) => role === "guest");
+    // }
 
-    //   if (check) {
-    //     checkedRoutes.push(route);
-    //   }
+    // if (!check) {
+    //   //todo must be return true
+    //   checkedRoutes.push(route);
+    // }
     checkedRoutes.push(route);
   });
 
