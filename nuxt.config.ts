@@ -11,7 +11,16 @@ export default defineNuxtConfig({
     public: {
       baseUrl: process.env.BASE_URL,
     },
+    session: {
+      name: "id",
+    },
   },
+
+  // nitro: {
+  //   devProxy: {
+  //     "/api": "http://localhost:4000",
+  //   },
+  // },
 
   css: [
     "~/assets/css/fonts.css",
@@ -20,7 +29,6 @@ export default defineNuxtConfig({
   ],
 
   modules: ["@nuxtjs/i18n", "@nuxtjs/google-fonts", "@pinia/nuxt"],
-
   googleFonts: {
     preconnect: true,
     prefetch: true,
@@ -31,8 +39,10 @@ export default defineNuxtConfig({
   },
 
   i18n: {
-    baseUrl: "http://localhost:4000/api/v1/",
+    baseUrl: "http://localhost:3000",
     vueI18n: "./configs/i18n.config.ts",
+    strategy: "prefix",
+    defaultLocale: "ru",
     locales: [
       {
         code: "ru",
