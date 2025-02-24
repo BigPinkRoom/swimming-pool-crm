@@ -8,14 +8,11 @@ export async function useApi(urlPath, method, params) {
   const { $showMessage, $showError } = useNuxtApp();
 
   try {
-    const { data, error } = await useFetch(`${baseUrlValue}${urlPath}`, {
+    const { data } = await useFetch(`${baseUrlValue}${urlPath}`, {
+      credentials: "include",
       method,
       body: params,
     });
-
-    if (error.value) {
-      throw error;
-    }
 
     return data?.value;
   } catch (error) {
