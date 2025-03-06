@@ -1,71 +1,11 @@
 <script setup>
+import { useMenusStore } from "@/stores/menusStore";
+import { routesConstantsActions } from "@/constants/routes";
 const { locale, locales } = useI18n();
-const { $services } = useNuxtApp();
 
-import { routesConstants } from "@/constants/routes";
-import { rolesConstants } from "@/constants/roles";
-
-const logoutUser = function () {
-  $services.user.logout();
-};
-
-// Роуты-ссылки для главного горизонтального меню
-const menuRoutes = [
-  {
-    name: routesConstants.MAIN_PAGE_ROUTE_NAME,
-    forRoles: [
-      rolesConstants.EMPLOYEE_ROLE_NAME,
-      rolesConstants.GUEST_ROLE_NAME,
-    ],
-  },
-  {
-    name: routesConstants.SIGNUP_ROUTE_NAME,
-    forRoles: [rolesConstants.GUEST_ROLE_NAME],
-  },
-  {
-    name: routesConstants.LOGIN_ROUTE_NAME,
-    forRoles: [rolesConstants.GUEST_ROLE_NAME],
-  },
-  {
-    name: routesConstants.PROFILE_ROUTE_NAME,
-    forRoles: [rolesConstants.EMPLOYEE_ROLE_NAME],
-  },
-  {
-    name: routesConstants.LOGOUT_ROUTE_NAME,
-    forRoles: [rolesConstants.EMPLOYEE_ROLE_NAME],
-    action: logoutUser,
-    disabledRouteEvent: true,
-  },
-];
-
-// Проверенные по ролям роуты
-const checkedRoutes = computed(() => {
-  const checkedRoutes = [];
-
-  menuRoutes.forEach((route) => {
-    let check = false;
-
-    // if (loggedIn) {
-    //   check = route.forRoles.find((role) => role === user.user_role);
-    // }
-
-    // if (!loggedIn) {
-    //   check = route.forRoles.find((role) => role === "guest");
-    // }
-
-    // if (!check) {
-    //   //todo must be return true
-    //   checkedRoutes.push(route);
-    // }
-    checkedRoutes.push(route);
-  });
-
-  return checkedRoutes;
+const mainMenuList = computed(() => {
+  return useMenusStore().mainMenu;
 });
-
-const startAction = function (action) {
-  if (action) action();
-};
 
 const localePath = useLocalePath();
 </script>
@@ -74,15 +14,10 @@ const localePath = useLocalePath();
   <div class="navbar">
     <div class="navbar__left"></div>
     <div class="navbar__right">
-      <div
-        v-for="route in checkedRoutes"
-        :key="route.name"
-        class="navbar__item"
-      >
+      <div v-for="route in mainMenuList" :key="route.name" class="navbar__item">
         <nuxt-link
           :to="localePath(route.name)"
-          :event="route.disabledRouteEvent ? '' : 'click'"
-          @click.native="startAction(route.action)"
+          @click.native="routesConstantsActions[route.name]"
         >
           {{ $t(`pages.${route.name}.title`) }}
         </nuxt-link>
