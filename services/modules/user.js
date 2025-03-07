@@ -1,4 +1,5 @@
 import { useUserStore } from "@/stores/userStore";
+import { useMenusStore } from "@/stores/menusStore";
 import UserEntity from "@/entities/userEntity";
 
 export default class User {
@@ -7,6 +8,7 @@ export default class User {
     const { $i18n } = useNuxtApp();
     this.t = $i18n.t;
     this.userStore = useUserStore();
+    this.menusStore = useMenusStore();
   }
 
   async _setUser(user) {
@@ -17,27 +19,20 @@ export default class User {
     this.userStore.clear();
   }
 
-  async create(form) {
-    // const userSignUpModel = {
-    //   email: params.email.value,
-    //   branch: params.branch.value,
-    //   password: params.password.value,
-    //   "password-confirm": params["password-confirm"].value,
-    //   name: params.name.value,
-    //   surname: params.surname.value,
-    //   patronymic: params.patronymic.value,
-    // };
-
-    let formData = new FormData([form]);
+  async create(eventSubmitForm) {
+    const userForm = new UserEntity().createUserSignUpModel(eventSubmitForm);
 
     try {
-      const response = await this.context.$api.user.signup(formData);
+      const response = await this.context.$api.user.signup(userForm);
 
       const userEmail = response?.userEmail || null;
 
       this.context.$showMessage(
         this.t(`forms.signup.${response.message}`, { userEmail })
       );
+
+      const menuValue = await this.context.$services.menus.getMainMenu();
+      this.menusStore.set(menuValue);
 
       return response;
     } catch (error) {
@@ -49,17 +44,13 @@ export default class User {
       );
     }
   }
-  async signIn(form) {
-    const userForm = new UserEntity().createUserSignInModel(form);
-
-    // const userSignInRequestModel = {
-    //   email: params.email.value,
-    //   branch: params.branch.value,
-    //   password: params.password.value,
-    // };
+  async signIn(eventSubmitForm) {
+    const userForm = new UserEntity().createUserSignInModel(eventSubmitForm);
 
     try {
       const response = await this.context.$api.user.signIn(userForm);
+
+      console.log("user js response", response);
 
       if (!response) return;
 
@@ -78,6 +69,9 @@ export default class User {
 
       this.context.$showMessage(this.t(`forms.signup`));
 
+      const menuValue = await this.context.$services.menus.getMainMenu();
+      this.menusStore.set(menuValue);
+
       return userSignInResponseModel;
     } catch (error) {
       console.log("error in sign in", error);
@@ -85,9 +79,11 @@ export default class User {
   }
 
   async logout() {
-    this.context.$api.user.logout();
+    await this.context.$api.user.logout();
+    await this._removeUser();
 
-    this._removeUser();
+    const menuValue = await this.context.$services.menus.getMainMenu();
+    this.menusStore.set(menuValue);
   }
 
   async getCurrent(params) {
