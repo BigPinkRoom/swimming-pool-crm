@@ -7,6 +7,10 @@ export default class User {
     try {
       const response = await useApi("auth/signup", "POST", params);
 
+      if (response) {
+        navigateTo("/");
+      }
+
       return response;
     } catch (error) {
       throw error;
@@ -15,27 +19,37 @@ export default class User {
 
   // TODO remove (here need to only api)?
   async logout() {
-    await await useApi("auth/logout", "DELETE");
-
-    const answer = "Succussefully logged out";
-
-    console.log("delete", this.context.$pinia);
-
-    return answer;
+    try {
+      await await useApi("auth/logout", "DELETE");
+    } catch (error) {
+      throw error;
+    } finally {
+      navigateTo("/");
+    }
   }
 
   // TODO remove (here need to only api)?
   async signIn(params) {
-    const user = await useApi("auth/login", "POST", params);
+    try {
+      const user = await useApi("auth/login", "POST", params);
 
-    return user;
+      if (user) {
+        navigateTo("/");
+      }
+
+      return user;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async getCurrent() {
-    const answer = await useApi("auth/user", "GET");
+    try {
+      const answer = await useApi("auth/user", "GET");
 
-    console.log("answer in gets current", answer);
-
-    return answer;
+      return answer;
+    } catch (error) {
+      throw error;
+    }
   }
 }
