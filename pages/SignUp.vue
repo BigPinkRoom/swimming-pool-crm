@@ -5,8 +5,8 @@ const { $services } = useNuxtApp();
 
 const branchesSelectValues = useBranchesStore().branches;
 
-const formSubmitHandler = async (eventForm) => {
-  $services.user.create(eventForm.target.elements);
+const formSubmitHandler = async (eventSubmitForm) => {
+  $services.user.create(eventSubmitForm);
 };
 </script>
 

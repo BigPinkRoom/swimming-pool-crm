@@ -2,17 +2,16 @@
 import { useBranchesStore } from "@/stores/branchStore";
 
 const { $services } = useNuxtApp();
+
 const branchesSelectValues = useBranchesStore().branches;
 
-const formSubmitHandler = async (eventForm) => {
-  // const user = eventForm.target.elements;
-
+const formSubmitHandler = async (eventSubmitForm) => {
   try {
-    const result = await $services.user.signIn(eventForm);
+    const result = await $services.user.signIn(eventSubmitForm);
 
     return result;
   } catch (err) {
-    throw err; // Пробрасываем ошибку для error
+    throw err;
   }
 };
 
