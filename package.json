@@ -18,7 +18,8 @@
     "uuid": "^11.0.3",
     "vue": "latest",
     "vue-router": "latest",
-    "vue-uuid": "^3.0.0"
+    "vue-uuid": "^3.0.0",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "sass-embedded": "^1.83.0"
