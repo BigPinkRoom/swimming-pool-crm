@@ -16,6 +16,17 @@ export default defineNuxtConfig({
     },
   },
 
+  plugins: [
+    "~/plugins/api.js",
+    "~/plugins/message.js",
+    "~/plugins/services.js",
+    "~/plugins/auth.js",
+  ],
+
+  // routeRules: {
+  //   "/**": { middleware: "auth" },
+  // },
+
   // nitro: {
   //   devProxy: {
   //     "/api": "http://localhost:4000",
@@ -29,6 +40,7 @@ export default defineNuxtConfig({
   ],
 
   modules: ["@nuxtjs/i18n", "@nuxtjs/google-fonts", "@pinia/nuxt"],
+
   googleFonts: {
     preconnect: true,
     prefetch: true,
@@ -40,7 +52,7 @@ export default defineNuxtConfig({
 
   i18n: {
     baseUrl: "http://localhost:3000",
-    vueI18n: "./configs/i18n.config.ts",
+    vueI18n: "../configs/i18n.config.ts",
     strategy: "prefix",
     defaultLocale: "ru",
     locales: [
