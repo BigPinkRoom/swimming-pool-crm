@@ -20,7 +20,7 @@ export default class User {
   // TODO remove (here need to only api)?
   async logout() {
     try {
-      await await useApi("auth/logout", "DELETE");
+      await useApi("auth/logout", "DELETE");
     } catch (error) {
       throw error;
     } finally {
@@ -45,9 +45,9 @@ export default class User {
 
   async getCurrent() {
     try {
-      const answer = await useApi("auth/user", "GET");
+      const user = await useApi("auth/user", "GET");
 
-      return answer;
+      return user;
     } catch (error) {
       throw error;
     }
