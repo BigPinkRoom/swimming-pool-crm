@@ -1,13 +1,22 @@
 <script setup>
 import { useMenusStore } from "@/stores/menusStore";
-import { routesConstantsActions } from "@/constants/routes";
+import { routesConstants } from "@/constants/routes";
+
 const { locale, locales } = useI18n();
+const { $services } = useNuxtApp();
+const localePath = useLocalePath();
 
 const mainMenuList = computed(() => {
   return useMenusStore().mainMenu;
 });
 
-const localePath = useLocalePath();
+const handleRouteAction = async (action) => {
+  if (action === "logout") {
+    await $services.user.logout();
+  } else {
+    navigateTo(localePath(routesConstants[action]));
+  }
+};
 </script>
 
 <template>
@@ -17,7 +26,7 @@ const localePath = useLocalePath();
       <div v-for="route in mainMenuList" :key="route.name" class="navbar__item">
         <nuxt-link
           :to="localePath(route.name)"
-          @click.native="routesConstantsActions[route.name]"
+          @click="handleRouteAction(route.name)"
         >
           {{ $t(`pages.${route.name}.title`) }}
         </nuxt-link>
