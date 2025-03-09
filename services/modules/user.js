@@ -50,8 +50,6 @@ export default class User {
     try {
       const response = await this.context.$api.user.signIn(userForm);
 
-      console.log("user js response", response);
-
       if (!response) return;
 
       const userSignInResponseModel = {
@@ -87,8 +85,16 @@ export default class User {
   }
 
   async getCurrent(params) {
-    const response = await this.context.$api.user.getCurrent();
+    try {
+      const response = await this.context.$api.user.getCurrent();
 
-    return response;
+      return response;
+    } catch (error) {
+      if (error.value.statusCode === 401) {
+        return;
+      } else {
+        throw error;
+      }
+    }
   }
 }

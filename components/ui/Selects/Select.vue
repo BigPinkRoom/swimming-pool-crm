@@ -18,20 +18,11 @@ const props = defineProps({
 });
 
 const uuidV4 = uuid.v4();
-
-const updateValue = function (value) {
-  console.log("select update value", value);
-};
 </script>
 
 <template>
   <div class="select">
-    <select
-      :id="id"
-      :name="name"
-      class="select__field"
-      @input="updateValue($event.target.value)"
-    >
+    <select :id="id" :name="name" class="select__field">
       <option v-if="placeholder" value="null" disabled selected>
         {{ placeholder }}
       </option>

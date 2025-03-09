@@ -7,8 +7,6 @@ export const useUserStore = defineStore("users", () => {
   function set(payload) {
     user.value = payload;
 
-    console.log("user value", user.value);
-
     if (user.value) {
       isAuthenticated.value = true;
     }
