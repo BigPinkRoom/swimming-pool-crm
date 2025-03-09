@@ -1,10 +1,7 @@
-const { $services } = useNuxtApp();
-
-export const routesConstantsActions = {
-  main: () => navigateTo("/"),
-  signup: () => navigateTo("/signup"),
-  login: () => navigateTo("/signin"),
-  profile: () => navigateTo("/profile"),
-  logout: () => $services.user.logout(),
-  admin_panel: () => navigateTo("/admin-panel"),
+export const routesConstants = {
+  main: "/",
+  signup: "/signup",
+  login: "/signin",
+  profile: "/profile",
+  admin_panel: "/admin-panel",
 };
