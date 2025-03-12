@@ -42,7 +42,6 @@ export default class Menus {
       return processedResponse;
     } catch (error) {
       this.context.$showError(error);
-      console.log("api menus error (service)", error);
     }
   }
 }

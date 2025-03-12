@@ -27,7 +27,6 @@ export default class Branches {
       return branchesSelectModel;
     } catch (error) {
       this.context.$showError(error);
-      console.log("api branches error", error);
     }
   }
 }
