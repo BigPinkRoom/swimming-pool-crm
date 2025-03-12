@@ -72,16 +72,23 @@ export default class User {
 
       return userSignInResponseModel;
     } catch (error) {
-      console.log("error in sign in", error);
+      this.context.$showError(
+        this.t(
+          `forms.login.validationErrors.${error.value?.data.error.message}`,
+          { userEmail: error.value?.data.error.userEmail }
+        )
+      );
     }
   }
 
   async logout() {
-    await this.context.$api.user.logout();
-    await this._removeUser();
+    try {
+      await this.context.$api.user.logout();
+      await this._removeUser();
 
-    const menuValue = await this.context.$services.menus.getMainMenu();
-    this.menusStore.set(menuValue);
+      const menuValue = await this.context.$services.menus.getMainMenu();
+      this.menusStore.set(menuValue);
+    } catch (error) {}
   }
 
   async getCurrent(params) {
