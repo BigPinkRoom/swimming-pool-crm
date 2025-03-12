@@ -9,7 +9,7 @@ export default class Branches {
 
       return response;
     } catch (error) {
-      console.log("branches api error", error);
+      throw error;
     }
   }
 }

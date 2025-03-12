@@ -9,7 +9,7 @@ export default class Menus {
 
       return response;
     } catch (error) {
-      console.log("menus api error", error);
+      throw error;
     }
   }
 }
