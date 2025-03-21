@@ -5,13 +5,15 @@ const { $services } = useNuxtApp();
 
 const branchesSelectValues = useBranchesStore().branches;
 
+const formErrors = ref({});
+
 const formSubmitHandler = async (eventSubmitForm) => {
   try {
     const result = await $services.user.signIn(eventSubmitForm);
 
     return result;
-  } catch (err) {
-    throw err;
+  } catch (error) {
+    formErrors.value = error;
   }
 };
 
@@ -24,6 +26,7 @@ const refreshUser = async () => {
   <div class="container">
     <FormsSignIn
       :branch-options-list="branchesSelectValues"
+      :errors="formErrors"
       @formSubmit="formSubmitHandler"
     />
     <button @click="refreshUser">get user</button>
@@ -39,7 +42,7 @@ const refreshUser = async () => {
   width: 100%;
   height: calc(100vh - 4rem);
 
-  background-color: #ccc;
+  background-color: #fff;
 }
 
 .title {
