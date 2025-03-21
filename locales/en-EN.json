@@ -241,9 +241,9 @@
     }
   },
   "zod": {
-    "email": "Invalid email",
-    "required": "Required field",
+    "email": "Invalid email format",
+    "required": "Field is required",
     "tooSmall": "Value is too small",
-    "tooBig": "Value is too large"
+    "tooBig": "Value exceeds the limit"
   }
 }
