@@ -1,9 +1,17 @@
 <script setup>
 import { uuid } from "vue-uuid";
+import { userSignInValidationSchema } from "@/schemas/zod/userSchemas";
 import vSelect from "@/components/ui/Selects/Select";
 import vInput from "@/components/ui/Fields/Input";
 
+const { $services } = useNuxtApp();
+const { $i18n } = useNuxtApp();
+const t = $i18n.t;
+
 const uuidV4 = uuid.v4();
+const email = ref("");
+const password = ref("");
+const formErrors = ref({});
 
 const props = defineProps({
   branchOptionsList: {
@@ -12,6 +20,10 @@ const props = defineProps({
       return [];
     },
   },
+  errors: {
+    type: Object,
+    default: () => ({}),
+  },
 });
 
 const emit = defineEmits(["formSubmit"]);
@@ -19,6 +31,26 @@ const emit = defineEmits(["formSubmit"]);
 const emitSubmit = function (event) {
   emit("formSubmit", event);
 };
+
+watch(email, (newEmail) => {
+  $services.user.validateField({
+    field: "email",
+    value: newEmail,
+    schemaRaw: userSignInValidationSchema,
+    formErrors: formErrors.value,
+    propsErrors: props.errors,
+  });
+});
+
+watch(password, (newPassword) => {
+  $services.user.validateField({
+    field: "password",
+    value: newPassword,
+    schemaRaw: userSignInValidationSchema,
+    formErrors: formErrors.value,
+    propsErrors: props.errors,
+  });
+});
 </script>
 
 <template>
@@ -26,38 +58,45 @@ const emitSubmit = function (event) {
     <h1 class="form__title">{{ $t("forms.login.title") }}</h1>
 
     <div class="form__item">
-      <label :for="`login-branch-select_${uuidV4}`" class="form__label">
-        {{ $t("forms.login.fields.branch.title") }}
-      </label>
       <v-select
         :id="`login-branch-select_${uuidV4}`"
         :options-list="branchOptionsList"
-        :placeholder="$t('forms.login.fields.branch.placeholder')"
+        :title="$t('forms.login.fields.branch.title')"
         name="branch"
       />
     </div>
 
     <div class="form__item">
-      <label :for="`login-email_${uuidV4}`" class="form__label">
-        {{ $t("forms.login.fields.email.title") }}
-      </label>
       <v-input
+        v-model="email"
         :id="`login-email_${uuidV4}`"
-        :placeholder="$t('forms.login.fields.email.placeholder')"
+        :title="$t('forms.login.fields.email.title')"
         name="email"
         type="email"
+        :errorMessage="
+          $services.user.errorMessagesInputCheck(
+            'email',
+            formErrors,
+            props.errors
+          )
+        "
       />
     </div>
 
     <div class="form__item">
-      <label :for="`login-password_${uuidV4}`" class="form__label">
-        {{ $t("forms.login.fields.password.title") }}
-      </label>
       <v-input
+        v-model="password"
         :id="`login-password_${uuidV4}`"
-        :placeholder="$t('forms.login.fields.password.placeholder')"
+        :title="$t('forms.login.fields.password.title')"
         name="password"
         type="password"
+        :errorMessage="
+          $services.user.errorMessagesInputCheck(
+            'password',
+            formErrors,
+            props.errors
+          )
+        "
       />
     </div>
 
@@ -68,6 +107,8 @@ const emitSubmit = function (event) {
 .form {
   display: flex;
   flex-direction: column;
+  max-width: 220px;
+  width: 220px;
   padding: 1.6rem;
 
   &__item {
