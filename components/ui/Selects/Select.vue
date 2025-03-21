@@ -8,7 +8,7 @@ const props = defineProps({
   name: {
     type: String,
   },
-  placeholder: {
+  title: {
     type: String,
     default: () => "",
   },
@@ -22,6 +22,9 @@ const uuidV4 = uuid.v4();
 
 <template>
   <div class="select">
+    <label :for="id" class="select__title">
+      {{ title }}
+    </label>
     <select :id="id" :name="name" class="select__field">
       <option v-if="placeholder" value="null" disabled selected>
         {{ placeholder }}
@@ -42,10 +45,28 @@ const uuidV4 = uuid.v4();
 
 <style lang="scss" scoped>
 .select {
+  position: relative;
+
   &__field {
     width: 100%;
+    height: 3.4rem;
+
+    font-size: 1.4rem;
   }
+
   &__option {
+  }
+
+  &__title {
+    position: absolute;
+    top: -0.6rem;
+    left: 0.8rem;
+
+    padding: 0 3px;
+
+    color: var(--color-main-tertiary-light);
+    font-size: 1.2rem;
+    background-color: var(--color-white);
   }
 }
 </style>
