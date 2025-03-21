@@ -28,7 +28,7 @@ const formSubmitHandler = async (eventSubmitForm) => {
   width: 100%;
   height: calc(100vh - 4rem);
 
-  background-color: #ccc;
+  background-color: #fff;
 }
 
 .title {
