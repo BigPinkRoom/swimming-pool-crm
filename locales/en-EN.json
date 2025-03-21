@@ -239,5 +239,11 @@
         }
       }
     }
+  },
+  "zod": {
+    "email": "Invalid email",
+    "required": "Required field",
+    "tooSmall": "Value is too small",
+    "tooBig": "Value is too large"
   }
 }
