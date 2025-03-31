@@ -39,7 +39,12 @@ export default defineNuxtConfig({
     "~/assets/scss/global/variables.scss",
   ],
 
-  modules: ["@nuxtjs/i18n", "@nuxtjs/google-fonts", "@pinia/nuxt"],
+  modules: [
+    "@nuxtjs/i18n",
+    "@nuxtjs/google-fonts",
+    "@pinia/nuxt",
+    "@vee-validate/nuxt",
+  ],
 
   googleFonts: {
     preconnect: true,
@@ -65,5 +70,9 @@ export default defineNuxtConfig({
         name: "English",
       },
     ],
+  },
+
+  veeValidate: {
+    autoImports: true,
   },
 });
