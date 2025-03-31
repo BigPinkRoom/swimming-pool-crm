@@ -244,6 +244,8 @@
     "email": "Invalid email format",
     "required": "Field is required",
     "tooSmall": "Value is too small",
-    "tooBig": "Value exceeds the limit"
+    "tooBig": "Value exceeds the limit",
+    "notMatch": "Passwords do not match",
+    "success": "validation successful"
   }
 }

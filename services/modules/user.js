@@ -1,8 +1,16 @@
 import { useUserStore } from "@/stores/userStore";
 import { useMenusStore } from "@/stores/menusStore";
 import UserEntity from "@/entities/userEntity";
+import { useField } from "vee-validate";
 
+/**
+ * Класс для работы с пользователем: регистрация, вход, выход, управление данными пользователя.
+ */
 export default class User {
+  /**
+   * Создает экземпляр класса User.
+   * @param {Object} context - Контекст приложения (Nuxt контекст).
+   */
   constructor(context) {
     this.context = context;
 
@@ -15,20 +23,25 @@ export default class User {
     this.userEntity = new UserEntity(this.context, new FormData());
   }
 
+  /**
+   * Устанавливает данные пользователя в хранилище.
+   * @param {Object} user - Данные пользователя для сохранения.
+   */
   async _setUser(user) {
     this.userStore.set(user);
   }
 
+  /**
+   * Очищает данные пользователя из хранилища.
+   */
   async _removeUser() {
     this.userStore.clear();
   }
 
-  _validateUserForm(eventSubmitForm) {
-    const currentFormData = new FormData(eventSubmitForm.target);
-
-    return this.userEntity.createUserSignInModel(currentFormData);
-  }
-
+  /**
+   * Устанавливает меню пользователя.
+   * @throws {Error} - Ошибка, если не удалось получить меню.
+   */
   async _setMenu() {
     try {
       const menuValue = await this.context.$services.menus.getMainMenu();
@@ -38,14 +51,34 @@ export default class User {
     }
   }
 
-  async _getSignInResponse(userForm) {
-    try {
-      return await this.context.$api.user.signIn(userForm);
-    } catch (error) {
-      throw error;
-    }
+  /**
+   * Валидирует форму регистрации пользователя.
+   * @param {Event} eventSubmitForm - Событие отправки формы.
+   * @returns {Object} - Валидированные данные формы.
+   */
+  _validateUserSignUpForm(eventSubmitForm) {
+    const currentFormData = new FormData(eventSubmitForm.target);
+
+    return this.userEntity.createUserSignUpModel(currentFormData);
   }
 
+  /**
+   * Валидирует форму входа пользователя.
+   * @param {Event} eventSubmitForm - Событие отправки формы.
+   * @returns {Object} - Валидированные данные формы.
+   */
+  _validateUserSignInForm(eventSubmitForm) {
+    const currentFormData = new FormData(eventSubmitForm.target);
+
+    return this.userEntity.createUserSignInModel(currentFormData);
+  }
+
+  /**
+   * Получает текущего пользователя с сервера.
+   * @param {Object} params - Параметры запроса (опционально).
+   * @returns {Promise<Object|null>} - Данные текущего пользователя или null, если пользователь не авторизован.
+   * @throws {Error} - Ошибка, если запрос не удался.
+   */
   async getCurrent(params) {
     try {
       const response = await this.context.$api.user.getCurrent();
@@ -60,9 +93,15 @@ export default class User {
     }
   }
 
+  /**
+   * Обрабатывает успешный вход пользователя.
+   * @param {Object} response - Ответ сервера после успешного входа.
+   * @returns {Object} - Данные пользователя после входа.
+   */
   async _handleSuccessfulSignIn(response) {
     const userSignInResponseModel =
       this.userEntity.createUserSignInResponseModel(response);
+
     this._setUser(userSignInResponseModel);
 
     this._setMenu();
@@ -72,59 +111,60 @@ export default class User {
     return userSignInResponseModel;
   }
 
-  _handleSignInError(error) {
+  /**
+   * Обрабатывает серверные ошибки валидации.
+   * @param {Error} error - Ошибка, возникшая при входе.
+   */
+  _handleServerValidationError(error, type) {
     if (!error?.value?.data.error.message) {
       throw error;
     }
 
     this.context.$showError(
       this.t(
-        `forms.login.validationErrors.${error?.value?.data.error.message}`,
+        `forms.${type}.validationErrors.${error?.value?.data.error.message}`,
         { userEmail: error.value?.data.error.userEmail }
       )
     );
   }
 
+  /**
+   * Выполняет вход пользователя.
+   * @param {Event} eventSubmitForm - Событие отправки формы входа.
+   * @returns {Promise<Object>} - Данные пользователя после успешного входа.
+   */
   async signIn(eventSubmitForm) {
     try {
-      const userForm = this._validateUserForm(eventSubmitForm);
+      const userForm = this._validateUserSignInForm(eventSubmitForm);
 
-      const response = await this._getSignInResponse(userForm);
+      const response = await this.context.$api.user.signIn(userForm);
 
       return this._handleSuccessfulSignIn(response);
     } catch (error) {
-      this._handleSignInError(error);
+      this._handleServerValidationError(error, "signIn");
     }
   }
 
+  /**
+   * Регистрирует нового пользователя.
+   * @param {Event} eventSubmitForm - Событие отправки формы регистрации.
+   * @returns {Promise<Object>} - Ответ сервера после успешной регистрации.
+   */
   async create(eventSubmitForm) {
-    const userForm = new UserEntity({
-      context: this.context,
-    }).createUserSignUpModel(eventSubmitForm);
-
     try {
+      const userForm = this._validateUserSignUpForm(eventSubmitForm);
+
       const response = await this.context.$api.user.signup(userForm);
-
-      const userEmail = response?.userEmail || null;
-
-      this.context.$showMessage(
-        this.t(`forms.signup.${response.message}`, { userEmail })
-      );
-
-      const menuValue = await this.context.$services.menus.getMainMenu();
-      this.menusStore.set(menuValue);
 
       return response;
     } catch (error) {
-      this.context.$showError(
-        this.t(
-          `forms.signup.validationErrors.${error.value?.data.error.message}`,
-          { userEmail: error.value?.data.error.userEmail }
-        )
-      );
+      this._handleServerValidationError(error, "signup");
     }
   }
 
+  /**
+   * Выполняет выход пользователя.
+   */
   async logout() {
     try {
       await this.context.$api.user.logout();
@@ -133,28 +173,5 @@ export default class User {
       const menuValue = await this.context.$services.menus.getMainMenu();
       this.menusStore.set(menuValue);
     } catch (error) {}
-  }
-
-  errorMessagesInputCheck(fieldName, formErrors, propsErrors) {
-    const checkFormsErrorsIsEmpty =
-      formErrors[fieldName] || propsErrors[fieldName] === "";
-
-    if (checkFormsErrorsIsEmpty) {
-      return formErrors[fieldName];
-    } else {
-      return propsErrors[fieldName];
-    }
-  }
-
-  validateField({ field, value, schemaRaw, formErrors, propsErrors }) {
-    const schema = schemaRaw(this.t);
-
-    try {
-      schema.pick({ [field]: true }).parse({ [field]: value });
-      formErrors[field] = ""; // Очищаем ошибку, если валидация прошла успешно
-      propsErrors[field] = "";
-    } catch (error) {
-      formErrors[field] = error.errors[0].message; // Устанавливаем сообщение об ошибке
-    }
   }
 }

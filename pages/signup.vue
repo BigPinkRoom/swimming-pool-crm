@@ -4,18 +4,11 @@ import { useBranchesStore } from "@/stores/branchStore";
 const { $services } = useNuxtApp();
 
 const branchesSelectValues = useBranchesStore().branches;
-
-const formSubmitHandler = async (eventSubmitForm) => {
-  $services.user.create(eventSubmitForm);
-};
 </script>
 
 <template>
   <div class="container">
-    <FormsSignUp
-      :branch-options-list="branchesSelectValues"
-      @formSubmit="formSubmitHandler"
-    />
+    <FormsSignUp :branch-options-list="branchesSelectValues" />
   </div>
 </template>
 

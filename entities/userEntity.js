@@ -1,6 +1,16 @@
-import { userSignInValidationSchema } from "@/schemas/zod/userSchemas";
+import {
+  userSignInValidationSchema,
+  userSignUpValidationSchema,
+} from "@/schemas/zod/userSchemas";
 
+/**
+ * Класс для работы с данными пользователя: валидация, форматирование и создание моделей данных.
+ */
 export default class UserEntity {
+  /**
+   * Создает экземпляр класса UserEntity.
+   * @param {Object} context - Контекст приложения (Nuxt контекст).
+   */
   constructor({ context }) {
     this.context = context;
 
@@ -9,35 +19,16 @@ export default class UserEntity {
   }
 
   /**
-   * Форматирует ошибки валидации Zod в объект с ключами полей и сообщениями об ошибках.
-   * @param {Object} error - Ошибки валидации Zod.
-   * @returns {Object} Объект с ошибками в формате { fieldName: errorMessage }.
-   */
-  _formatValidationErrors(error) {
-    if (error.constructor.name === "_ZodError") {
-      const errors = error.errors.reduce((acc, curr) => {
-        const field = curr.path[0];
-        acc[field] = curr.message;
-        return acc;
-      }, {});
-
-      return errors;
-    } else {
-      return error;
-    }
-  }
-
-  /**
    * Валидирует поля из FormData с использованием указанной схемы Zod.
-   * @param {FormData} formData - Объект FormData, содержащий данные для валидации.
+   * @param {FormData} currentFormData - Объект FormData, содержащий данные для валидации.
    * @param {ZodSchema} schema - Схема валидации Zod.
    * @returns {Object} Объект с валидированными данными.
    */
-  _validateFields(formData, schema) {
+  _validateFormData(currentFormData, schema) {
     try {
       const unvalidatedFields = {};
 
-      for (const [key, value] of formData.entries()) {
+      for (const [key, value] of currentFormData.entries()) {
         unvalidatedFields[key] = value;
       }
 
@@ -51,41 +42,40 @@ export default class UserEntity {
 
   /**
    * Устанавливает валидированные данные в текущий объект FormData.
-   * @param {FormData} formData - Исходный объект FormData.
+   * @param {FormData} currentFormData - Исходный объект FormData.
    * @param {Object} validatedFormData - Объект с валидированными данными.
    * @returns {FormData} Новый объект FormData с валидированными данными.
    */
-  _setValidatedFields(formData, validatedFormData) {
-    const newFormData = formData;
+  _setValidatedFormData(currentFormData, validatedFormData) {
     for (const [key, value] of Object.entries(validatedFormData)) {
-      newFormData.set(key, value);
+      currentFormData.set(key, value);
     }
 
-    return newFormData;
+    return currentFormData;
   }
+
   /**
    * Создает модель данных для входа пользователя, валидируя и форматируя FormData.
-   * @param {FormData} formDataRaw - Исходный объект FormData с данными пользователя.
+   * @param {FormData} currentFormData - Исходный объект FormData с данными пользователя.
    * @returns {FormData} Новый объект FormData с валидированными данными.
    * @throws {Object} Объект с ошибками валидации в формате { fieldName: errorMessage }.
    */
-  createUserSignInModel(formDataRaw) {
-    const formData = formDataRaw;
+  createUserSignInModel(currentFormData) {
     const schema = userSignInValidationSchema(this.t);
 
     try {
-      const validatedFields = this._validateFields(formData, schema);
+      const validatedFields = this._validateFormData(currentFormData, schema);
 
-      const validatedFormData = this._setValidatedFields(
-        formData,
+      const validatedFormData = this._setValidatedFormData(
+        currentFormData,
         validatedFields
       );
 
       return validatedFormData;
     } catch (error) {
-      const errors = this._formatValidationErrors(error);
+      console.log("create user model error", error);
 
-      throw errors;
+      throw error;
     }
   }
 
@@ -114,22 +104,20 @@ export default class UserEntity {
    * @throws {Object} Объект с ошибками валидации в формате { fieldName: errorMessage }.
    */
   createUserSignUpModel(formDataRaw) {
-    const formData = formDataRaw;
+    const formData = cloneDeep(formDataRaw);
     const schema = userSignUpValidationSchema(this.t);
 
     try {
-      const validatedFields = this._validateFields(formData, schema);
+      const validatedFields = this._validateFormData(formData, schema);
 
-      const validatedFormData = this._setValidatedFields(
+      const validatedFormData = this._setValidatedFormData(
         formData,
         validatedFields
       );
 
       return validatedFormData;
     } catch (error) {
-      const errors = this._formatValidationErrors(error);
-
-      throw errors;
+      throw error;
     }
   }
 }

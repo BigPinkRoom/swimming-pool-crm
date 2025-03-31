@@ -40,7 +40,6 @@ function close() {
 }
 
 onMounted(() => {
-  // console.log("timeout value", timeout.value);
   show();
 });
 </script>

@@ -3,15 +3,14 @@ import { uuid } from "vue-uuid";
 import { userSignInValidationSchema } from "@/schemas/zod/userSchemas";
 import vSelect from "@/components/ui/Selects/Select";
 import vInput from "@/components/ui/Fields/Input";
+import { toTypedSchema } from "@vee-validate/zod";
 
 const { $services } = useNuxtApp();
 const { $i18n } = useNuxtApp();
 const t = $i18n.t;
-
 const uuidV4 = uuid.v4();
-const email = ref("");
-const password = ref("");
-const formErrors = ref({});
+
+const validationSchema = toTypedSchema(userSignInValidationSchema(t));
 
 const props = defineProps({
   branchOptionsList: {
@@ -20,41 +19,26 @@ const props = defineProps({
       return [];
     },
   },
-  errors: {
-    type: Object,
-    default: () => ({}),
-  },
 });
 
-const emit = defineEmits(["formSubmit"]);
+const { errors, values, meta, validate } = useForm({
+  validationSchema,
+});
 
-const emitSubmit = function (event) {
-  emit("formSubmit", event);
+const formSubmitHandler = async (eventSubmitForm) => {
+  try {
+    await validate();
+    const result = await $services.user.signIn(eventSubmitForm);
+
+    return result;
+  } catch (error) {
+    throw error;
+  }
 };
-
-watch(email, (newEmail) => {
-  $services.user.validateField({
-    field: "email",
-    value: newEmail,
-    schemaRaw: userSignInValidationSchema,
-    formErrors: formErrors.value,
-    propsErrors: props.errors,
-  });
-});
-
-watch(password, (newPassword) => {
-  $services.user.validateField({
-    field: "password",
-    value: newPassword,
-    schemaRaw: userSignInValidationSchema,
-    formErrors: formErrors.value,
-    propsErrors: props.errors,
-  });
-});
 </script>
 
 <template>
-  <form id="text" class="form" @submit.prevent="emitSubmit">
+  <form id="text" class="form" @submit.prevent="formSubmitHandler">
     <h1 class="form__title">{{ $t("forms.login.title") }}</h1>
 
     <div class="form__item">
@@ -63,44 +47,38 @@ watch(password, (newPassword) => {
         :options-list="branchOptionsList"
         :title="$t('forms.login.fields.branch.title')"
         name="branch"
+        :success-message="$t('zod.success')"
+        :errorSubmit="errors.branch"
       />
     </div>
 
     <div class="form__item">
       <v-input
-        v-model="email"
         :id="`login-email_${uuidV4}`"
         :title="$t('forms.login.fields.email.title')"
         name="email"
         type="email"
-        :errorMessage="
-          $services.user.errorMessagesInputCheck(
-            'email',
-            formErrors,
-            props.errors
-          )
-        "
+        :success-message="$t('zod.success')"
+        :errorSubmit="errors.email"
       />
     </div>
 
     <div class="form__item">
       <v-input
-        v-model="password"
         :id="`login-password_${uuidV4}`"
         :title="$t('forms.login.fields.password.title')"
         name="password"
         type="password"
-        :errorMessage="
-          $services.user.errorMessagesInputCheck(
-            'password',
-            formErrors,
-            props.errors
-          )
-        "
+        :success-message="$t('zod.success')"
+        :errorSubmit="errors.password"
       />
     </div>
 
-    <v-input type="submit" :value="$t('forms.login.submit')" />
+    <UiButtonsButtonSubmit
+      :disabled="!meta.valid"
+      text-invalid="forms.login.submit"
+      text-success="forms.login.submit"
+    />
   </form>
 </template>
 <style lang="scss" scoped>

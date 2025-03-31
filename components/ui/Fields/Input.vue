@@ -1,4 +1,6 @@
 <script setup>
+import { useField } from "vee-validate";
+
 const props = defineProps({
   id: {
     type: [String, Number],
@@ -9,45 +11,65 @@ const props = defineProps({
   title: {
     type: String,
   },
-  errorMessage: {
+  errorSubmit: {
     type: String,
+  },
+  successMessage: {
+    type: String,
+    default: "",
   },
   type: {
     type: String,
     required: true,
   },
+  modelValue: {
+    type: [String, Number],
+    default: "",
+  },
 });
 
 const emit = defineEmits(["update:modelValue"]);
 
-const updateValue = (event) => {
-  const value = event.target.value;
-  emit("update:modelValue", value);
-};
+const { value, errorMessage, meta } = useField(props.name || "", undefined, {
+  syncVModel: true,
+});
 
-const fieldErrorClass = computed(() => ({
-  "field__input--error": Boolean(props.errorMessage),
+const fieldClass = computed(() => ({
+  "field__input--error": Boolean(errorMessage.value || props.errorSubmit),
+  "field__input--success": Boolean(meta.valid),
 }));
 
-const titleErrorClass = computed(() => ({
-  "field__title--error": Boolean(props.errorMessage),
+const titleClass = computed(() => ({
+  "field__title--error": Boolean(errorMessage.value || props.errorSubmit),
+  "field__title--success": Boolean(meta.valid),
+}));
+
+const subtitleClass = computed(() => ({
+  "field__subtitle--error": Boolean(errorMessage.value || props.errorSubmit),
+  "field__subtitle--success": Boolean(meta.valid),
 }));
 </script>
 
 <template>
   <div class="field">
-    <label :for="id" class="field__title" :class="titleErrorClass">
+    <label :for="id" class="field__title" :class="titleClass">
       {{ title }}
     </label>
     <input
       class="field__input"
-      :class="fieldErrorClass"
+      :class="fieldClass"
       :id="id"
       :type="type"
       :name="name"
-      @input="updateValue"
+      v-model="value"
     />
-    <div v-if="errorMessage" class="field__error">{{ errorMessage }}</div>
+    <div
+      v-if="errorMessage || errorSubmit || meta.valid"
+      class="field__subtitle"
+      :class="subtitleClass"
+    >
+      {{ errorMessage || errorSubmit || successMessage }}
+    </div>
   </div>
 </template>
 
@@ -65,11 +87,19 @@ const titleErrorClass = computed(() => ({
     padding: 0 3px;
 
     color: var(--color-main-tertiary-light);
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     background-color: var(--color-white);
+
+    border-left: 0.1rem solid;
+    border-right: 0.1rem solid;
+    border-radius: 0.4rem;
 
     &--error {
       color: var(--color-warning);
+    }
+
+    &--success {
+      color: var(--color-main);
     }
   }
 
@@ -79,36 +109,50 @@ const titleErrorClass = computed(() => ({
 
     font-size: 1.4rem;
 
-    border: 1px solid var(--color-main-tertiary-light-2);
-    border-radius: 3px;
+    border: 0.1rem solid var(--color-main-tertiary-light-2);
+    border-radius: 0.3rem;
 
-    box-shadow: 0 0 0 0 var(--color-main-tertiary-light-2);
-
-    transition: all 0.5s ease;
+    transition: all 0.6s ease;
 
     &:focus {
-      box-shadow: 0 0 0 1px;
       outline: none;
+      box-shadow: 0rem 0rem 0rem 0.2rem var(--color-main-tertiary-light-2);
     }
 
     &--error {
-      border: 1px solid var(--color-warning);
+      background-color: var(--color-main-secondary-light-extra);
+      border: 0.1rem solid var(--color-warning);
 
       &:focus {
-        border: 1px solid var(--color-warning);
         outline: none;
+        box-shadow: 0rem 0rem 0rem 0.2rem var(--color-warning);
+      }
+    }
 
-        box-shadow: 0 0 0 1px var(--color-warning);
+    &--success {
+      background-color: var(--color-main-lighter);
+      border: 0.1rem solid var(--color-main-light);
+
+      &:focus {
+        box-shadow: 0rem 0rem 0rem 0.2rem var(--color-main);
       }
     }
   }
 
-  &__error {
+  &__subtitle {
     display: block; // Явно указываем блочный тип
     width: 100%;
+    margin-top: 0.3rem;
 
-    color: var(--color-warning);
-    font-size: 1.3rem;
+    font-size: 1.1rem;
+
+    &--error {
+      color: var(--color-warning);
+    }
+
+    &--success {
+      color: var(--color-main);
+    }
   }
 }
 </style>
