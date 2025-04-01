@@ -5,7 +5,11 @@ export default class Abonements {
 
   async getFull(params) {
     try {
-      const response = await useApi("abonementsFull", "POST", params);
+      const response = await useApi(
+        "abonements/abonementsFull",
+        "POST",
+        params
+      );
 
       return response;
     } catch (error) {
