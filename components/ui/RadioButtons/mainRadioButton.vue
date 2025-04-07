@@ -1,6 +1,47 @@
+<script setup>
+const props = defineProps({
+  inputData: {
+    type: Array,
+    require: true,
+  },
+  name: {
+    type: String,
+  },
+  direction: {
+    type: String,
+    default() {
+      return "row";
+    },
+  },
+  modelValue: {
+    type: [String, Number],
+    required: true,
+  },
+});
+
+const emit = defineEmits(["update:modelValue"]);
+
+const updateValue = (value) => {
+  emit("update:modelValue", value);
+};
+
+const classObject = () => {
+  const obj = {
+    "radio-button_row": props.direction === "row",
+    "radio-button_column": props.direction === "column",
+  };
+
+  return obj;
+};
+</script>
+
 <template>
   <div class="radio-button" :class="classObject">
-    <div class="radio-button__item" v-for="buttonData in inputData" :key="buttonData.id">
+    <div
+      class="radio-button__item"
+      v-for="buttonData in inputData"
+      :key="buttonData.id"
+    >
       <label :for="buttonData.id">
         <input
           :id="buttonData.id"
@@ -8,7 +49,8 @@
           :value="buttonData.value"
           class="radio-button__input"
           type="radio"
-          @input="updateValue($event.target.value)"
+          :checked="modelValue === buttonData.value"
+          @change="updateValue(buttonData.value)"
         />
 
         {{ buttonData.label }}
@@ -17,39 +59,6 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'RadioButton',
-  props: {
-    inputData: {
-      type: Array,
-      require: true,
-    },
-    name: {
-      type: String,
-    },
-    direction: {
-      type: String,
-      default() {
-        return 'row';
-      },
-    },
-  },
-  computed: {
-    classObject() {
-      const obj = {
-        'radio-button_row': this.direction === 'row',
-        'radio-button_column': this.direction === 'column',
-      };
-
-      return obj;
-    },
-  },
-  methods: {
-    updateValue(value) {},
-  },
-};
-</script>
 <style lang="scss" scoped>
 .radio-button {
   display: flex;
@@ -71,7 +80,7 @@ export default {
   }
 }
 
-input[type='radio'] {
+input[type="radio"] {
   --s: 1.6rem; /* control the size */
   --c: var(--color-main); /* the active color */
 
@@ -79,7 +88,8 @@ input[type='radio'] {
   aspect-ratio: 1;
   border: calc(var(--s) / 8) solid var(--color-main-tertiary-light);
   padding: calc(var(--s) / 8);
-  background: radial-gradient(farthest-side, var(--c) 100%, #0000) 50%/0 0 no-repeat content-box;
+  background: radial-gradient(farthest-side, var(--c) 100%, #0000) 50%/0 0
+    no-repeat content-box;
   border-radius: 50%;
   outline-offset: calc(var(--s) / 10);
   -webkit-appearance: none;
@@ -89,12 +99,12 @@ input[type='radio'] {
   font-size: inherit;
   transition: 0.3s;
 }
-input[type='radio']:checked {
+input[type="radio"]:checked {
   border-color: var(--c);
   background-size: 100% 100%;
 }
 
-input[type='radio']:disabled {
+input[type="radio"]:disabled {
   background: linear-gradient(#939393 0 0) 50%/100% 20% no-repeat content-box;
   opacity: 0.5;
   cursor: not-allowed;
