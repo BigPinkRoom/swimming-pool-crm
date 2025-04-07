@@ -26,6 +26,9 @@ const props = defineProps({
     type: [String, Number],
     default: "",
   },
+  maxlength: {
+    type: Number,
+  },
 });
 
 const emit = defineEmits(["update:modelValue"]);
@@ -62,6 +65,7 @@ const subtitleClass = computed(() => ({
       :type="type"
       :name="name"
       v-model="value"
+      :maxlength="maxlength"
     />
     <div
       v-if="errorMessage || errorSubmit || meta.valid"
@@ -70,6 +74,7 @@ const subtitleClass = computed(() => ({
     >
       {{ errorMessage || errorSubmit || successMessage }}
     </div>
+    <div v-else class="field__subtitle--empty" :class="subtitleClass"></div>
   </div>
 </template>
 
@@ -152,6 +157,10 @@ const subtitleClass = computed(() => ({
 
     &--success {
       color: var(--color-main);
+    }
+
+    &--empty {
+      height: 15px;
     }
   }
 }
