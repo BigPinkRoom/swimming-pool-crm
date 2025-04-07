@@ -246,6 +246,9 @@
     "tooSmall": "Value is too small",
     "tooBig": "Value exceeds the limit",
     "notMatch": "Passwords do not match",
-    "success": "validation successful"
+    "success": "validation successful",
+    "onlyLetters": "Разрешены только буквы",
+    "dateFormat": "Формат дд.мм.гггг",
+    "invalidDate": "Такой даты не существует"
   }
 }
