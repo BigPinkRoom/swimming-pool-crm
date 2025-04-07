@@ -1,43 +1,44 @@
-<template>
-  <div class="footer-main">
-    <v-button class="footer-main__left" :text="leftText" @click="clickHandlerLeft" />
-    <v-button class="footer-main__right" :text="rightText" @click="clickHandlerRight" />
-  </div>
-</template>
+<script setup>
+import Button from "@/components/ui/Buttons/ButtonMain";
 
-<script>
-import Button from '@/components/ui/Buttons/ButtonMain';
-
-export default {
-  name: 'FooterMain',
-  components: {
-    vButton: Button,
-  },
-  props: {
-    leftText: {
-      type: String,
-      default() {
-        return 'Ok';
-      },
-    },
-    rightText: {
-      type: String,
-      default() {
-        return 'Cancel';
-      },
+const props = defineProps({
+  leftText: {
+    type: String,
+    default() {
+      return "Ok";
     },
   },
-  methods: {
-    clickHandlerLeft() {
-      this.$emit('clickLeft');
-    },
-
-    clickHandlerRight() {
-      this.$emit('clickRight');
+  rightText: {
+    type: String,
+    default() {
+      return "Cancel";
     },
   },
+});
+
+const clickHandlerLeft = () => {
+  this.$emit("clickLeft");
+};
+
+const clickHandlerRight = () => {
+  this.$emit("clickRight");
 };
 </script>
+
+<template>
+  <div class="footer-main">
+    <uiButtonsButtonMain
+      class="footer-main__left"
+      :text="leftText"
+      @click="clickHandlerLeft"
+    />
+    <uiButtonsButtonMain
+      class="footer-main__right"
+      :text="rightText"
+      @click="clickHandlerRight"
+    />
+  </div>
+</template>
 
 <style lang="scss" scoped>
 .footer-main {

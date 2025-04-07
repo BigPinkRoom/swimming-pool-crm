@@ -1,3 +1,42 @@
+<script setup>
+const props = defineProps({
+  title: {
+    type: String,
+    require: true,
+  },
+  styleType: {
+    type: String,
+  },
+  sticky: {
+    type: Boolean,
+  },
+  position: {
+    type: String,
+    require: true,
+    default() {
+      return "left";
+    },
+  },
+});
+
+computed({
+  classObject() {
+    const obj = {
+      "side-modal_sticky": this.sticky,
+      [this.styleType]: this.styleType,
+    };
+
+    if (this.position === "left") {
+      obj["side-modal_left"] = true;
+    } else if (this.position === "right") {
+      obj["side-modal_right"] = true;
+    }
+
+    return obj;
+  },
+});
+</script>
+
 <template>
   <div class="side-modal" :class="classObject">
     <h2 class="side-modal__title">
@@ -12,60 +51,6 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'SideModal',
-  props: {
-    title: {
-      type: String,
-      require: true,
-    },
-    styleType: {
-      type: String,
-    },
-    sticky: {
-      type: Boolean,
-    },
-    position: {
-      type: String,
-      require: true,
-      default() {
-        return 'left';
-      },
-    },
-  },
-  computed: {
-    classObject() {
-      const obj = {
-        'side-modal_sticky': this.sticky,
-        [this.styleType]: this.styleType,
-      };
-
-      if (this.position === 'left') {
-        obj['side-modal_left'] = true;
-      } else if (this.position === 'right') {
-        obj['side-modal_right'] = true;
-      }
-
-      return obj;
-    },
-  },
-  mounted() {
-    window.addEventListener('keydown', this.keyEscapeHandler);
-  },
-  beforeDestroy() {
-    window.removeEventListener('keydown', this.keyEscapeHandler);
-  },
-  methods: {
-    keyEscapeHandler(event) {
-      if (event.code === 'Escape') {
-        this.$emit('close');
-      }
-    },
-  },
-};
-</script>
-
 <style lang="scss" scoped>
 .side-modal {
   position: fixed;
@@ -73,8 +58,8 @@ export default {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  width: 45rem;
-  height: 100%;
+  width: 45.8rem;
+  height: calc(100% - 50px);
   padding: 1.2rem;
 
   background-color: #fff;
@@ -103,7 +88,7 @@ export default {
   }
 
   &__content {
-    overflow: scroll;
+    overflow-y: auto;
   }
 
   &__footer {

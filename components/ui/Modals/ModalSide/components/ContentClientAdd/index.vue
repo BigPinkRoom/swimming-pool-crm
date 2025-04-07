@@ -1,6 +1,42 @@
+<script setup>
+import vCheckbox from "@/components/ui/Checkboxes/MainCheckbox";
+import FieldsetClientAdd from "./components/AddGroupClient";
+import FieldsetAbonements from "./components/AddGroupAbonements";
+import FieldsetRelatives from "./components/AddGroupRelatives";
+
+const props = defineProps({
+  selectedClientData: {
+    type: Object,
+  },
+});
+const showAbonements = ref(true);
+const clientsList = ref([0]);
+
+const actionType = computed(() => {
+  return props.selectedClientData ? "edit" : "add";
+});
+
+const addOneMoreClientHandler = () => {
+  this.clientsList.push(true);
+};
+const checkboxAbonementHandler = (value) => {
+  this.showAbonements = value;
+};
+// const addClose = (index) => {
+//   return Number(index) !== 0;
+// };
+// const deleteClient = (index) => {
+//   this.clientsList.splice(index, 1);
+// };
+</script>
+
 <template>
   <form class="client-main">
-    <div class="client-main__item" v-for="(client, index) in clientsList" :key="index">
+    <div
+      class="client-main__item"
+      v-for="(client, index) in clientsList"
+      :key="index"
+    >
       <fieldset-client-add @addOneMoreChildren="addOneMoreClientHandler" />
     </div>
 
@@ -23,53 +59,6 @@
     </div>
   </form>
 </template>
-
-<script>
-import vCheckbox from '@/components/ui/Checkboxes/MainCheckbox';
-import FieldsetClientAdd from './components/AddGroupClient';
-import FieldsetAbonements from './components/AddGroupAbonements';
-import FieldsetRelatives from './components/AddGroupRelatives';
-
-export default {
-  name: 'ClientEditMain',
-  components: {
-    vCheckbox,
-    FieldsetClientAdd,
-    FieldsetAbonements,
-    FieldsetRelatives,
-  },
-  props: {
-    selectedClientData: {
-      type: Object,
-    },
-  },
-  data() {
-    return {
-      showAbonements: true,
-      clientsList: [0],
-    };
-  },
-  computed: {
-    actionType() {
-      return this.selectedClientData ? 'edit' : 'add';
-    },
-  },
-  methods: {
-    addOneMoreClientHandler() {
-      this.clientsList.push(true);
-    },
-    checkboxAbonementHandler(value) {
-      this.showAbonements = value;
-    },
-    addClose(index) {
-      return Number(index) !== 0;
-    },
-    deleteClient(index) {
-      this.clientsList.splice(index, 1);
-    },
-  },
-};
-</script>
 
 <style lang="scss" scoped>
 .client-main {
