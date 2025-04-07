@@ -3,6 +3,7 @@ import BranchesSelect from "./modules/branchesSelect";
 import User from "./modules/user";
 import Menus from "./modules/menus";
 import Abonements from "./modules/abonements";
+import Clients from "./modules/clients";
 
 export default class Services {
   constructor(app) {
@@ -14,5 +15,7 @@ export default class Services {
     this.user = new User(app);
 
     this.abonements = new Abonements(app);
+
+    this.clients = new Clients(app);
   }
 }
