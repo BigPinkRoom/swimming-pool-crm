@@ -9,6 +9,12 @@ onMounted(async () => {
     console.log("get full abonements", response);
   }, 3000);
 });
+
+const emit = defineEmits(["openModal"]);
+
+const openModal = () => {
+  emit("openModal");
+};
 </script>
 
 <template>
@@ -68,6 +74,7 @@ onMounted(async () => {
           </div>
         </div>
       </div>
+      <button @click="openModal">Открыть модальное окно</button>
     </div>
   </div>
 </template>
