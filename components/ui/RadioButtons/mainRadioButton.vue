@@ -73,6 +73,10 @@ const classObject = () => {
 
   &__item {
     margin-right: 1.2rem;
+
+    & label {
+      font-size: 14px;
+    }
   }
 
   &__item:last-child {
