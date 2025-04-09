@@ -6,7 +6,7 @@ export const useMessageStore = defineStore("message", () => {
   function add(data) {
     messages.value.push({
       id: Math.round(Math.random() * 1e6),
-      message: data.message,
+      message: String(data.message),
       type: data.type,
       duration: data.duration,
     });
