@@ -7,7 +7,9 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "test": "vitest",
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "@nuxtjs/google-fonts": "^3.2.0",
@@ -26,6 +28,11 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "sass-embedded": "^1.83.0"
+    "@vitejs/plugin-vue": "^5.2.3",
+    "@vitest/ui": "^3.1.1",
+    "@vue/test-utils": "^2.4.6",
+    "jsdom": "^26.0.0",
+    "sass-embedded": "^1.83.0",
+    "vitest": "^3.1.1"
   }
 }
