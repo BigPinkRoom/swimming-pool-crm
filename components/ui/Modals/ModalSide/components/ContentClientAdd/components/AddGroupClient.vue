@@ -32,6 +32,13 @@ const props = defineProps({
 });
 const { errors, values, meta, validate, resetForm } = useForm({
   validationSchema,
+  initialValues: {
+    name: "",
+    surname: "",
+    patronymic: "",
+    birthday: "",
+    gender: 1,
+  },
 });
 const inputData = reactive([
   { id: 0, value: 0, label: "Мальчик" },
@@ -45,7 +52,7 @@ const isEditing = ref(true);
 const clientAddToStoreLoading = ref(false);
 defineEmits(["close"]);
 
-const addChildText = computed(() => {
+const addClientText = computed(() => {
   const checkClientLessMax =
     clientsStore.clients.length < clientsConstants.MAX_QUANTITY_CLIENTS;
   const checkClientEqualMax =
@@ -71,22 +78,31 @@ const currentTempClient = computed(() =>
   getTempClient(clientsStore.currentClientId)
 );
 
-const toggleEditing = (value) => {
+const toggleEditing = async (value) => {
+  if (value === true) {
+    await nextTick();
+    addInputMask();
+  }
   isEditing.value = value;
 };
 
 const addInputMask = async () => {
-  await nextTick();
   if (birthdayDate.value?.$el) {
-    new Cleave(birthdayDate.value.$el.querySelector("input"), {
-      date: true,
-      delimiter: ".",
-      datePattern: ["d", "m", "Y"],
-      blocks: [2, 2, 4],
-      numericOnly: true,
-      dateMax: "31.12.9999",
-      max: "31129999",
-    });
+    const inputElement = birthdayDate.value.$el.querySelector("input");
+    if (inputElement) {
+      if (inputElement._cleave) {
+        inputElement._cleave.destroy();
+      }
+      new Cleave(inputElement, {
+        date: true,
+        delimiter: ".",
+        datePattern: ["d", "m", "Y"],
+        blocks: [2, 2, 4],
+        numericOnly: true,
+        dateMax: "31.12.2100",
+        max: "31122100",
+      });
+    }
   }
 };
 
@@ -114,6 +130,9 @@ const changeEdit = async (id) => {
   } else {
     validate();
   }
+
+  await nextTick();
+  addInputMask();
 };
 
 const addOneMoreClients = async () => {
@@ -126,6 +145,7 @@ const addOneMoreClients = async () => {
   showOneMoreClient.value = true;
   getTempClient(newClientId);
   resetForm();
+  await nextTick();
   addInputMask();
 };
 
@@ -363,6 +383,7 @@ const deleteClient = (id) => {
                   class="card-table__delete-img"
                 />
               </div>
+              {{ clientSections.active.id }}
             </div>
           </div>
           <div
@@ -402,7 +423,7 @@ const deleteClient = (id) => {
                   )
                 "
               >
-                {{ addChildText }}
+                {{ addClientText }}
               </button>
             </div>
           </tr>
@@ -548,7 +569,7 @@ const deleteClient = (id) => {
 
     width: 17.1rem;
 
-    margin-bottom: 3.2rem;
+    margin-bottom: 2.2rem;
     // margin-right: 12px;
   }
   &__label {
