@@ -140,11 +140,19 @@
                 "placeholder": "Helen"
               },
               "type": {
-                "label": "Relative type",
+                "label": "Тип родителя",
                 "options": {
-                  "mother": "Mother",
-                  "father": "Father",
-                  "other": "Other relative"
+                  "mother": "Мама",
+                  "father": "Папа",
+                  "grandmother": "Бабушка",
+                  "grandfather": "Бабушка",
+                  "brother": "Бабушка",
+                  "sister": "Бабушка",
+                  "aunt": "Бабушка",
+                  "uncle": "Бабушка",
+                  "cousinBrother": "Бабушка",
+                  "cousinSister": "Бабушка",
+                  "other": "Другой"
                 }
               },
               "telephone": {

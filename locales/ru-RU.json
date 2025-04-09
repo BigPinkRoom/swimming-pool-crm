@@ -135,15 +135,31 @@
           "relatives": {
             "label": "Родители",
             "fields": {
+              "surname": {
+                "label": "Фамилия",
+                "placeholder": "Елена"
+              },
               "name": {
                 "label": "Имя",
                 "placeholder": "Елена"
+              },
+              "patronymic": {
+                "label": "Отчество",
+                "placeholder": "Иванович"
               },
               "type": {
                 "label": "Тип родителя",
                 "options": {
                   "mother": "Мама",
                   "father": "Папа",
+                  "grandmother": "Бабушка",
+                  "grandfather": "Дедушка",
+                  "brother": "Брат",
+                  "sister": "Сестра",
+                  "aunt": "Тетя",
+                  "uncle": "Дядя",
+                  "cousinBrother": "Двоюродный брат",
+                  "cousinSister": "Двоюродная сестра",
                   "other": "Другой"
                 }
               },
