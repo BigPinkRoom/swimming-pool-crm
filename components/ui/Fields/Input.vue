@@ -29,6 +29,9 @@ const props = defineProps({
   maxlength: {
     type: Number,
   },
+  placeholderProp: {
+    type: String,
+  },
 });
 
 const emit = defineEmits(["update:modelValue"]);
@@ -66,6 +69,7 @@ const subtitleClass = computed(() => ({
       :name="name"
       v-model="value"
       :maxlength="maxlength"
+      :placeholder="placeholderProp"
     />
     <div
       v-if="errorMessage || errorSubmit || meta.valid"
