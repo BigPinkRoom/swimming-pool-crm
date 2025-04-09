@@ -24,7 +24,6 @@ export default class Abonements {
       }
 
       const response = await this.context.$api.abonements.getFull(params);
-      console.log("Received response", response);
 
       return response;
     } catch (error) {
