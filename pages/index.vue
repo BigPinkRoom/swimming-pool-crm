@@ -2,8 +2,13 @@
 import ContentClientAdd from "@/components/ui/Modals/ModalSide/components/ContentClientAdd/index.vue";
 import FooterMain from "@/components/ui/Modals/ModalSide/components/FooterMain.vue";
 
+import { useRelativesStore } from "@/stores/relativeStore";
+const relativesStore = useRelativesStore();
+
 const modalSideActive = ref(false);
 const selectedClientData = ref(false);
+
+const { $services } = useNuxtApp();
 
 const actionType = computed(() => {
   return selectedClientData.value ? "edit" : "add";
