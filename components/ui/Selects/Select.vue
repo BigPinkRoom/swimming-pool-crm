@@ -76,7 +76,7 @@ const uuidV4 = uuid.v4();
         v-for="option in optionsList"
         :key="`${option.value}_${uuidV4}`"
         :disabled="option.disabled"
-        :value="option.value"
+        :value="option.value || 1"
         class="select__option"
       >
         {{ option.text }}
@@ -89,6 +89,7 @@ const uuidV4 = uuid.v4();
     >
       {{ errorMessage || errorSubmit || successMessage }}
     </div>
+    <div v-else class="select__subtitle--empty" :class="subtitleClass"></div>
   </div>
 </template>
 
@@ -172,6 +173,10 @@ const uuidV4 = uuid.v4();
 
     &--success {
       color: var(--color-main);
+    }
+
+    &--empty {
+      height: 15px;
     }
   }
 
