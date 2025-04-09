@@ -12,6 +12,8 @@ const props = defineProps({
   },
 });
 
+const selectedAbonementType = ref(0);
+
 const inputData = reactive([
   {
     id: "mainRadioAbonementNew",
@@ -42,6 +44,7 @@ const inputData = reactive([
         <v-radio-button
           name="abonementType"
           :input-data="inputData"
+          v-model="selectedAbonementType"
         ></v-radio-button>
 
         <div class="client-main-abonement__row">
