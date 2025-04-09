@@ -6,7 +6,6 @@ const daysOfCurrentMonth = ref($services.abonements.getDaysOfCurrentMonth());
 onMounted(async () => {
   setTimeout(async () => {
     const response = await $services.abonements.getFullAbonements();
-    console.log("get full abonements", response);
   }, 3000);
 });
 
