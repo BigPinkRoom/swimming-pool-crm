@@ -2,6 +2,7 @@ import Menus from "./modules/menus";
 import Branches from "./modules/branches";
 import User from "./modules/user.js";
 import Abonements from "./modules/abonements";
+import Relatives from "./modules/relatives";
 
 export default class Api {
   constructor(app) {
@@ -9,5 +10,6 @@ export default class Api {
     this.branches = new Branches(app);
     this.user = new User(app);
     this.abonements = new Abonements(app);
+    this.relatives = new Relatives(app);
   }
 }
