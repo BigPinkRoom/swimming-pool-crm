@@ -73,8 +73,6 @@ export default class UserEntity {
 
       return validatedFormData;
     } catch (error) {
-      console.log("create user model error", error);
-
       throw error;
     }
   }
@@ -104,7 +102,7 @@ export default class UserEntity {
    * @throws {Object} Объект с ошибками валидации в формате { fieldName: errorMessage }.
    */
   createUserSignUpModel(formDataRaw) {
-    const formData = cloneDeep(formDataRaw);
+    const formData = formDataRaw; // Сделать через lodash cloneDeep
     const schema = userSignUpValidationSchema(this.t);
 
     try {
