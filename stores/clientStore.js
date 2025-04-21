@@ -47,6 +47,10 @@ export const useClientsStore = defineStore("clients", () => {
     clients.push(payload);
   }
 
+  function setClientOfEdit(payload) {
+    clients.push(payload);
+  }
+
   /**
    * Добавляет нового пустого клиента в список и делает его активным.
    *
@@ -79,6 +83,7 @@ export const useClientsStore = defineStore("clients", () => {
     activeClient.patronymic = currentTempClient.value.patronymic;
     activeClient.birthday = currentTempClient.value.birthday;
     activeClient.gender = currentTempClient.value.gender;
+    activeClient.isNew = true;
   };
 
   /**
@@ -92,7 +97,7 @@ export const useClientsStore = defineStore("clients", () => {
     if (index === -1) return;
 
     removeClientByIndex(clients, index);
-    reassignClientIds(clients);
+    // reassignClientIds(clients);
     updateActiveClientAfterDeletion({
       clients,
       currentClientId,
@@ -101,12 +106,19 @@ export const useClientsStore = defineStore("clients", () => {
     });
   };
 
+  const reset = () => {
+    clients.splice(0, clients.length);
+    currentClientId.value = null;
+  };
+
   return {
     clients,
     currentClientId,
     updateActiveClient,
     addEmpty,
     add,
+    setClientOfEdit,
     deleteClient,
+    reset,
   };
 });
