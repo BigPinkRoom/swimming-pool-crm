@@ -1,32 +1,23 @@
+<script setup>
+const props = defineProps({
+  id: {
+    type: [String, Number],
+  },
+  text: {
+    type: String,
+    required: true,
+  },
+  styleType: {
+    type: String,
+  },
+});
+</script>
+
 <template>
-  <button :id="id" @click="clickHandler" class="button" :class="styleType">
+  <button :id="id" class="button" :class="styleType">
     {{ text }}
   </button>
 </template>
-
-<script>
-export default {
-  name: 'Button',
-  props: {
-    id: {
-      type: [String, Number],
-    },
-    text: {
-      type: String,
-      required: true,
-    },
-    styleType: {
-      type: String,
-    },
-  },
-  methods: {
-    clickHandler(event) {
-      event.preventDefault();
-      this.$emit('click');
-    },
-  },
-};
-</script>
 
 <style lang="scss" scoped>
 .button {

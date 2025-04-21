@@ -31,6 +31,10 @@ const props = defineProps({
     type: String,
     default: "",
   },
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(["update:modelValue"]);
@@ -58,7 +62,7 @@ const uuidV4 = uuid.v4();
 </script>
 
 <template>
-  <div class="select">
+  <div class="select" :class="{ 'select--disabled': props.disabled }">
     <label :for="id" class="select__title" :class="titleClass">
       {{ title }}
     </label>
@@ -68,6 +72,7 @@ const uuidV4 = uuid.v4();
       class="select__field"
       :class="fieldClass"
       v-model="value"
+      :disabled="props.disabled"
     >
       <option v-if="placeholder" value="" disabled>
         {{ placeholder }}
@@ -76,7 +81,7 @@ const uuidV4 = uuid.v4();
         v-for="option in optionsList"
         :key="`${option.value}_${uuidV4}`"
         :disabled="option.disabled"
-        :value="option.value || 1"
+        :value="option.value"
         class="select__option"
       >
         {{ option.text }}
@@ -99,10 +104,17 @@ const uuidV4 = uuid.v4();
 
   width: 100%;
 
+  &--disabled {
+    .select__title {
+      color: var(--color-main-tertiary-light-2);
+    }
+  }
+
   &__title {
     position: absolute;
     top: -0.6rem;
     left: 0.8rem;
+    z-index: 10;
 
     padding: 0 3px;
 
@@ -113,6 +125,11 @@ const uuidV4 = uuid.v4();
     border-left: 0.1rem solid;
     border-right: 0.1rem solid;
     border-radius: 0.4rem;
+
+    .select__field:disabled + & {
+      opacity: 50%;
+      background-color: green; // Пример стиля
+    }
 
     &--error {
       color: var(--color-warning);
@@ -134,6 +151,11 @@ const uuidV4 = uuid.v4();
     border-radius: 0.3rem;
 
     transition: all 0.6s ease;
+
+    &:disabled .select__title {
+      opacity: 50%;
+      background-color: green;
+    }
 
     &:focus {
       outline: none;
