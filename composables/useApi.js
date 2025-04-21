@@ -17,14 +17,16 @@ export async function useApi(urlPath, method, params) {
       headers,
     });
 
-    if (!data.value) {
-      throw error;
+    if (error.value) {
+      throw error.value;
     }
 
-    return data?.value;
+    if (data.value === null || data.value === undefined) {
+      return { success: true };
+    }
+
+    return data.value;
   } catch (error) {
     throw error;
   }
-
-  return;
 }
