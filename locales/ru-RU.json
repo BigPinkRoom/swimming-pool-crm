@@ -186,8 +186,17 @@
               "quantity": {
                 "label": "Кол-во занятий"
               },
+              "duration": {
+                "label": "Длительность "
+              },
+              "activationDate": {
+                "label": "Дата активации"
+              },
               "startDate": { "label": "Дата начала" },
-              "endDate": { "label": "Дата окончания" }
+              "endDate": { "label": "Дата окончания" },
+              "activeAbonements": {
+                "label": "Активные абонементы"
+              }
             }
           }
         },
@@ -265,6 +274,6 @@
     "success": "Валидация успешна",
     "onlyLetters": "Разрешены только буквы",
     "dateFormat": "Необходим формат дд.мм.гггг",
-    "invalidDate": "Такой даты не существует"
+    "invalidDate": "Неверная дата"
   }
 }
