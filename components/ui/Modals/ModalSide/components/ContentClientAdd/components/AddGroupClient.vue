@@ -1,3 +1,7 @@
+/** * @component AddGroupClient * @description Компонент для добавления и
+редактирования группы клиентов * @vue-prop {String} actionType - Тип действия
+(добавление/редактирование) * @vue-prop {Boolean} closeButton - Флаг отображения
+кнопки закрытия */
 <script setup>
 import { reactive, ref, computed, nextTick } from "vue";
 import { useForm } from "vee-validate";
@@ -7,6 +11,14 @@ import Cleave from "cleave.js";
 import { uuid } from "vue-uuid";
 
 import { useClientsStore } from "@/stores/clientStore";
+import Clients from "@/services/modules/clients";
+
+const clientsService = new Clients();
+const { formatDate } = clientsService;
+
+import AbonementEntity from "@/entities/abonementEntity";
+
+const { createFamilyModelResponse } = new AbonementEntity();
 
 import vRadioButton from "@/components/ui/RadioButtons/mainRadioButton";
 import vCloseButton from "@/components/ui/Buttons/ButtonClose.vue";
@@ -17,6 +29,8 @@ import ClientEntity from "@/entities/clientEntity";
 
 import { clientAddValidationSchema } from "@/schemas/zod/clientSchemas";
 
+import { clientsConstants } from "@/constants/clients";
+
 const { $services } = useNuxtApp();
 const { $i18n } = useNuxtApp();
 const t = $i18n.t;
@@ -24,12 +38,15 @@ const clientsStore = useClientsStore();
 const { checkValuesForValidateReset } = new ClientEntity();
 
 const validationSchema = toTypedSchema(clientAddValidationSchema(t));
-import { clientsConstants } from "@/constants/clients";
 
 const props = defineProps({
-  actionType: { type: String },
+  actionType: { type: Object },
   closeButton: { type: Boolean },
 });
+
+/**
+ * @type {Object} Форма с валидацией
+ */
 const { errors, values, meta, validate, resetForm } = useForm({
   validationSchema,
   initialValues: {
@@ -40,18 +57,31 @@ const { errors, values, meta, validate, resetForm } = useForm({
     gender: 1,
   },
 });
+
+/**
+ * @type {Array} Данные для радио-кнопок выбора пола
+ */
 const inputData = reactive([
   { id: 0, value: 0, label: "Мальчик" },
   { id: 1, value: 1, label: "Девочка" },
 ]);
+
+/**
+ * @type {Object} Временное хранилище данных клиентов
+ */
 const tempClients = reactive({});
 const uuidV4 = uuid.v4();
 const showOneMoreClient = ref(true);
 const birthdayDate = ref(null);
 const isEditing = ref(true);
 const clientAddToStoreLoading = ref(false);
+
 defineEmits(["close"]);
 
+/**
+ * @computed
+ * @returns {String} Текст для кнопки добавления клиента
+ */
 const addClientText = computed(() => {
   const checkClientLessMax =
     clientsStore.clients.length < clientsConstants.MAX_QUANTITY_CLIENTS;
@@ -67,6 +97,10 @@ const addClientText = computed(() => {
   }
 });
 
+/**
+ * @computed
+ * @returns {Object} Секции клиентов
+ */
 const clientSections = computed(() =>
   $services.clients.getClientsSections(
     clientsStore.clients,
@@ -74,10 +108,18 @@ const clientSections = computed(() =>
   )
 );
 
+/**
+ * @computed
+ * @returns {Object} Текущий временный клиент
+ */
 const currentTempClient = computed(() =>
   getTempClient(clientsStore.currentClientId)
 );
 
+/**
+ * Переключает режим редактирования
+ * @param {Boolean} value - Новое значение режима редактирования
+ */
 const toggleEditing = async (value) => {
   if (value === true) {
     await nextTick();
@@ -86,6 +128,62 @@ const toggleEditing = async (value) => {
   isEditing.value = value;
 };
 
+const setEditClient = () => {
+  clientsStore.reset();
+  let counter = 1;
+
+  // Проверяем, что есть данные для редактирования
+  if (props.actionType?.type === "edit" && props.actionType.family?.clients) {
+    const clients = props.actionType.family.clients;
+
+    // Очищаем временное хранилище
+    Object.keys(tempClients).forEach((key) => delete tempClients[key]);
+
+    // Добавляем клиентов в хранилище и заполняем временные данные
+    clients.forEach((client) => {
+      const clientId = client.clientId || counter;
+      counter++;
+
+      // Создаем объект клиента для хранилища
+      const clientForStore = {
+        id: clientId,
+        name: client.clientName || "",
+        surname: client.clientSurname || "",
+        gender: client.clientGender || 1,
+        birthday: formatDate(client.clientBirthday) || "",
+        patronymic: client.clientPatronymic || "",
+      };
+
+      // Добавляем клиента в хранилище
+      clientsStore.setClientOfEdit(clientForStore);
+
+      // Заполняем временное хранилище для формы
+      tempClients[clientId] = {
+        ...clientForStore,
+      };
+    });
+
+    // Активируем редактирование для первого клиента
+    if (clients.length > 0) {
+      const firstClientId = clients[0].clientId || clients[0].id;
+      clientsStore.currentClientId = firstClientId;
+      toggleEditing(true);
+
+      // Обновляем значения формы
+      resetForm({
+        values: {
+          ...tempClients[firstClientId],
+        },
+      });
+    }
+  } else {
+    console.warn("No valid client data provided for editing");
+  }
+};
+
+/**
+ * Добавляет маску ввода для поля даты рождения
+ */
 const addInputMask = async () => {
   if (birthdayDate.value?.$el) {
     const inputElement = birthdayDate.value.$el.querySelector("input");
@@ -106,6 +204,11 @@ const addInputMask = async () => {
   }
 };
 
+/**
+ * Получает или создает временного клиента
+ * @param {String} clientId - ID клиента
+ * @returns {Object} Данные клиента
+ */
 const getTempClient = (clientId) => {
   if (!tempClients[clientId]) {
     tempClients[clientId] = {
@@ -120,6 +223,10 @@ const getTempClient = (clientId) => {
   return tempClients[clientId];
 };
 
+/**
+ * Изменяет режим редактирования для клиента
+ * @param {String} id - ID клиента
+ */
 const changeEdit = async (id) => {
   clientsStore.currentClientId = id;
 
@@ -135,20 +242,38 @@ const changeEdit = async (id) => {
   addInputMask();
 };
 
+/**
+ * Добавляет нового клиента
+ */
 const addOneMoreClients = async () => {
   if ($services.clients.isMaxClientsLimitReached(clientsStore.clients)) return;
 
   const newClientId = clientsStore.addEmpty();
-
   clientsStore.currentClientId = newClientId;
 
   showOneMoreClient.value = true;
-  getTempClient(newClientId);
-  resetForm();
+
+  // Сбрасываем форму с пустыми значениями
+  resetForm({
+    values: {
+      name: "",
+      surname: "",
+      patronymic: "",
+      birthday: "",
+      gender: 1,
+      isNew: true,
+    },
+  });
+
   await nextTick();
   addInputMask();
 };
 
+/**
+ * Возвращает путь к изображению в зависимости от пола
+ * @param {Number} gender - Пол клиента (0 - мальчик, 1 - девочка)
+ * @returns {String} Путь к изображению
+ */
 const getGenderImage = (gender) => {
   switch (gender) {
     case 1:
@@ -160,16 +285,25 @@ const getGenderImage = (gender) => {
   }
 };
 
+/**
+ * Показывает индикатор загрузки при добавлении клиента
+ */
 const showClientAddToStoreLoading = () => {
   clientAddToStoreLoading.value = true;
   setTimeout(() => {
     clientAddToStoreLoading.value = false;
+    addOneMoreClients();
   }, 1000);
 };
 
+/**
+ * Добавляет клиента в хранилище
+ * @param {String} activeClientId - ID активного клиента
+ */
 const addClientToStore = async (activeClientId) => {
   try {
     const resultValidate = await validate();
+
     if (resultValidate.valid) {
       clientsStore.updateActiveClient(activeClientId, currentTempClient);
       showClientAddToStoreLoading();
@@ -179,14 +313,46 @@ const addClientToStore = async (activeClientId) => {
   }
 };
 
+/**
+ * Закрывает модальное окно
+ */
 const close = () => {
   $emit("close");
 };
 
-const deleteClient = (id) => {
+/**
+ * Удаляет клиента и активирует следующего
+ * @param {String} id - ID клиента для удаления
+ */
+const deleteClient = async (id) => {
+  // Удаляем клиента из хранилищ
   clientsStore.deleteClient(id);
   delete tempClients[id];
+
+  // Если клиенты остались, активируем следующего
+  if (clientsStore.clients.length > 0) {
+    const nextClient = clientsStore.clients[0]; // Берем первого клиента из списка
+
+    // Активируем этого следующего клиента
+    clientsStore.currentClientId = nextClient.id;
+
+    // Обновляем форму
+    await nextTick();
+    resetForm({ values: nextClient });
+    toggleEditing(true);
+  }
 };
+
+watch(
+  () => props.actionType.family,
+  () => {
+    if (props.actionType.type === "edit") {
+      setEditClient();
+    } else {
+      clientsStore.reset();
+    }
+  }
+);
 </script>
 
 <template>

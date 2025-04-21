@@ -16,12 +16,14 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits(["clickLeft", "clickRight"]);
+
 const clickHandlerLeft = () => {
-  this.$emit("clickLeft");
+  emit("clickLeft");
 };
 
 const clickHandlerRight = () => {
-  this.$emit("clickRight");
+  emit("clickRight");
 };
 </script>
 

@@ -5,46 +5,38 @@ import FieldsetAbonements from "./components/AddGroupAbonements";
 import FieldsetRelatives from "./components/AddGroupRelatives";
 
 const props = defineProps({
-  selectedClientData: {
-    type: Object,
-  },
+  actionType: { type: String },
 });
+
+const emit = defineEmits(["submit"]);
+
+const formRef = ref(null);
+
 const showAbonements = ref(true);
-const clientsList = ref([0]);
 
-const actionType = computed(() => {
-  return props.selectedClientData ? "edit" : "add";
-});
-
-const addOneMoreClientHandler = () => {
-  this.clientsList.push(true);
-};
 const checkboxAbonementHandler = (value) => {
-  this.showAbonements = value;
+  showAbonements.value = value;
 };
-// const addClose = (index) => {
-//   return Number(index) !== 0;
+// const submitForm = () => {
+//   emit("submit");
 // };
-// const deleteClient = (index) => {
-//   this.clientsList.splice(index, 1);
-// };
+
+// defineExpose({
+//   submitForm,
+// });
 </script>
 
 <template>
-  <form class="client-main">
-    <div
-      class="client-main__item"
-      v-for="(client, index) in clientsList"
-      :key="index"
-    >
-      <fieldset-client-add @addOneMoreChildren="addOneMoreClientHandler" />
+  <form class="client-main" ref="formRef">
+    <div class="client-main__item">
+      <fieldset-client-add :action-type="actionType" />
     </div>
 
     <div class="client-main__item">
       <fieldset-relatives :action-type="actionType" />
     </div>
 
-    <div class="client-main__item">
+    <div class="client-main__item client-main__item--add-abonements">
       <v-checkbox
         id="mainAbonementCheckbox"
         name="mainAbonementCheckbox"
@@ -64,6 +56,10 @@ const checkboxAbonementHandler = (value) => {
 .client-main {
   &__item {
     margin-bottom: 1.2rem;
+
+    &--add-abonements {
+      padding-left: 12px;
+    }
   }
 
   &__item:last-child {

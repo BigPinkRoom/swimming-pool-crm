@@ -1,4 +1,6 @@
 <script setup>
+import FooterMain from "@/components/ui/Modals/ModalSide/components/FooterMain.vue";
+
 const props = defineProps({
   title: {
     type: String,
@@ -46,7 +48,7 @@ computed({
       <slot name="content"></slot>
     </div>
     <div class="side-modal__footer">
-      <slot name="footer"></slot>
+      <slot name="footer"> </slot>
     </div>
   </div>
 </template>
@@ -62,6 +64,7 @@ computed({
   height: calc(100% - 50px);
   padding: 1.2rem;
 
+  box-shadow: -14px 20px 25px;
   background-color: #fff;
 
   &_sticky {
