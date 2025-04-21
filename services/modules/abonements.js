@@ -1,3 +1,7 @@
+import { isEmpty } from "lodash-es";
+import { getCurrentDate } from "@/helpers/getCurrentDate";
+import { columnsHeadersEnums } from "@/constants/enums/abonementsTableFull";
+
 export default class Abonements {
   constructor(context) {
     this.context = context;
@@ -20,14 +24,35 @@ export default class Abonements {
       const params = {};
 
       if (!sortings.length) {
-        params.sortings = [{ name: "user_created_id", type: "ASC" }];
+        params.sortings = [{ name: "number", type: "ASC" }];
       }
 
-      const response = await this.context.$api.abonements.getFull(params);
+      if (isEmpty(filters)) {
+        params.filters = {
+          year: getCurrentDate().currentYear,
+          month: getCurrentDate().currentMonth,
+        };
+      }
+
+      const response = await this.context.$api.abonements.getFull({
+        params,
+      });
 
       return response;
     } catch (error) {
       this.context.$showError(error);
     }
+  }
+
+  async addFamily(params) {
+    const response = await this.context.$api.abonements.addFamily(params);
+
+    return response;
+  }
+
+  async updateFamily(params) {
+    const response = await this.context.$api.abonements.updateFamily(params);
+
+    return response;
   }
 }

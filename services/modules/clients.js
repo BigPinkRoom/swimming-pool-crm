@@ -70,6 +70,7 @@ export default class Clients {
    */
   getClientsSections = (clients, activeId) => {
     const activeIndex = clients.findIndex((client) => client.id === activeId);
+
     return {
       before: clients.slice(0, activeIndex),
       active: activeIndex !== -1 ? clients[activeIndex] : null,
@@ -110,9 +111,9 @@ export default class Clients {
    * @param {Array<Object>} clients - Список клиентов для переопределения ID.
    */
   reassignClientIds = (clients) => {
-    clients.forEach((client, idx) => {
-      client.id = idx + 1;
-    });
+    // clients.forEach((client, idx) => {
+    //   client.id = idx + 1;
+    // });
   };
 
   /**
@@ -130,13 +131,13 @@ export default class Clients {
     deletedClientId,
     index,
   }) => {
-    if (currentClientId.value === deletedClientId) {
-      if (clients.length > 0) {
-        currentClientId.value = clients[index]?.id || clients[index - 1]?.id;
-      } else {
-        currentClientId.value = null;
-      }
-    }
+    // if (currentClientId.value === deletedClientId) {
+    //   if (clients.length > 0) {
+    //     currentClientId.value = clients[index]?.id || clients[index - 1]?.id;
+    //   } else {
+    //     currentClientId.value = null;
+    //   }
+    // }
   };
 
   /**
@@ -148,4 +149,19 @@ export default class Clients {
   removeClientByIndex = (clients, index) => {
     clients.splice(index, 1);
   };
+
+  formatDate(dateString) {
+    const date = new Date(dateString);
+
+    if (isNaN(date.getTime())) {
+      console.warn("Invalid date:", dateString);
+      return "";
+    }
+
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+
+    return `${day}.${month}.${year}`;
+  }
 }
