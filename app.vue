@@ -10,11 +10,17 @@ const branchesStore = useBranchesStore();
 const menusStore = useMenusStore();
 const relativesStore = useRelativesStore();
 
-const branchesValue = await $services.branchesSelect.get();
-branchesStore.set(branchesValue);
+const { data: branchesData } = await useAsyncData("branches", async () => {
+  const branchesValue = await $services.branchesSelect.get();
+  branchesStore.set(branchesValue);
+  return branchesValue;
+});
 
-const menuValue = await $services.menus.getMainMenu();
-menusStore.set(menuValue);
+const { data: menusData } = await useAsyncData("menus", async () => {
+  const menuValue = await $services.menus.getMainMenu();
+  menusStore.set(menuValue);
+  return menuValue;
+});
 </script>
 
 <template>
