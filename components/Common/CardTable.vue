@@ -49,6 +49,10 @@
     border: 0.1rem solid var(--color-main-tertiary-light-extra);
   }
 
+  &__title--abonements {
+    border-bottom: 0.1rem solid var(--color-main-tertiary-light-extra);
+  }
+
   &__table {
     &-title {
       width: 100%;
