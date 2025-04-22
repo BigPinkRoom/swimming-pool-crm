@@ -35,6 +35,17 @@ const closeModalSide = () => {
 };
 
 const sendFamily = async () => {
+  // Подготавливаем данные для отправки
+  const prepareData = (items) => {
+    return items.map((item) => {
+      if (!item.id) {
+        const { id, ...itemWithoutId } = item;
+        return itemWithoutId;
+      }
+      return item;
+    });
+  };
+
   const familyModelRequest = createFamilyModelRequest({
     clients: filterFilledObjects(clientsStore.clients),
     relatives: filterFilledObjects(relativesStore.relatives),
@@ -48,8 +59,8 @@ const sendFamily = async () => {
   );
 
   const family = createAddFamilyFormData({
-    clients: filterFilledObjects(familyModelRequest.clients),
-    relatives: filterFilledObjects(familyModelRequest.relatives),
+    clients: prepareData(filterFilledObjects(familyModelRequest.clients)),
+    relatives: prepareData(filterFilledObjects(familyModelRequest.relatives)),
     abonements: familyModelRequest.abonements,
   });
 
@@ -62,7 +73,7 @@ const updateFamily = async (request) => {
 
     // Обновляем ID только у новых клиентов
     if (response.createdClientIds) {
-      const newClients = clientsStore.clients.filter((client) => client.isNew);
+      const newClients = clientsStore.clients.filter((client) => !client.id);
       newClients.forEach((client, index) => {
         if (response.createdClientIds[index]) {
           client.id = response.createdClientIds[index];
@@ -73,7 +84,7 @@ const updateFamily = async (request) => {
     // Обновляем ID только у новых родственников
     if (response.createdRelativeIds) {
       const newRelatives = relativesStore.relatives.filter(
-        (relative) => relative.isNew
+        (relative) => !relative.id
       );
       newRelatives.forEach((relative, index) => {
         if (response.createdRelativeIds[index]) {
@@ -120,7 +131,7 @@ const handleFormSubmit = async () => {
       sticky
       position="left"
       @close="closeModalSide"
-      :title="$t(`forms.client.${actionType}.title`)"
+      :title="$t(`forms.client.${actionType?.type}.title`)"
     >
       <template #content>
         <ContentClientAdd ref="contentClientAddRef" :actionType="actionType"
