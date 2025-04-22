@@ -23,43 +23,40 @@ export default class ClientEntity {
 
   /**
    * Создает нового клиента с пустыми полями.
-   * Этот метод используется для инициализации нового клиента с уникальным идентификатором.
+   * Этот метод используется для инициализации нового клиента.
    *
-   * @param {number} id - Идентификатор клиента.
    * @returns {Object} - Объект нового клиента со следующими полями:
-   *   - id: Идентификатор клиента.
    *   - name: Имя клиента (пустая строка по умолчанию).
    *   - surname: Фамилия клиента (пустая строка по умолчанию).
    *   - patronymic: Отчество клиента (пустая строка по умолчанию).
    *   - birthday: Дата рождения клиента (пустая строка по умолчанию).
    *   - gender: Пол клиента (null по умолчанию).
    */
-  createNewClient = (id) => ({
-    id: id,
+  createNewClient = () => ({
     name: "",
     surname: "",
     patronymic: "",
     birthday: "",
-    gender: null,
+    gender: 0,
   });
 
   /**
    * Проверяет, все ли поля объекта клиента пустые.
    * Этот метод используется для определения, нужно ли сбросить данные клиента.
    *
-   * @param {Object} currentTempClient - Реактивный объект клиента, содержащий его текущие данные.
-   * @param {string} currentTempClient.value.name - Имя клиента.
-   * @param {string} currentTempClient.value.surname - Фамилия клиента.
-   * @param {string} currentTempClient.value.patronymic - Отчество клиента.
-   * @param {string} currentTempClient.value.birthday - Дата рождения клиента.
+   * @param {Object} currentTempClient - Данные клиента.
+   * @param {string} currentTempClient.name - Имя клиента.
+   * @param {string} currentTempClient.surname - Фамилия клиента.
+   * @param {string} currentTempClient.patronymic - Отчество клиента.
+   * @param {string} currentTempClient.birthday - Дата рождения клиента.
    * @returns {boolean} - Возвращает true, если все проверяемые поля пустые (false), иначе false.
    */
   checkValuesForValidateReset = (currentTempClient) => {
     const fieldsCheck = [
-      Boolean(currentTempClient.value.name),
-      Boolean(currentTempClient.value.surname),
-      Boolean(currentTempClient.value.patronymic),
-      Boolean(currentTempClient.value.birthday),
+      Boolean(currentTempClient.name),
+      Boolean(currentTempClient.surname),
+      Boolean(currentTempClient.patronymic),
+      Boolean(currentTempClient.birthday),
     ].every((field) => field === false);
 
     return fieldsCheck;
