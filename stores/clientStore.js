@@ -3,15 +3,7 @@ import { reactive, ref } from "vue";
 import Clients from "@/services/modules/clients";
 
 const clientsService = new Clients();
-const {
-  createNewClientId,
-  findClientById,
-  createNewClient,
-  findClientIndexById,
-  removeClientByIndex,
-  reassignClientIds,
-  updateActiveClientAfterDeletion,
-} = clientsService;
+const { createNewClient } = clientsService;
 
 /**
  * Стор для управления списком клиентов в приложении.
@@ -25,87 +17,76 @@ export const useClientsStore = defineStore("clients", () => {
   const clients = reactive([]);
 
   /**
-   * Реактивное значение текущего активного клиента (ID).
+   * Реактивное значение текущего активного клиента (индекс, начиная с 1).
    * @type {number|null}
    */
   const currentClientId = ref(null);
 
   /**
    * Добавляет нового клиента в список.
-   *
-   * @param {Object} payload - Объект с данными нового клиента.
-   * @param {string} payload.name - Имя клиента.
-   * @param {string} payload.surname - Фамилия клиента.
-   * @param {string} payload.patronymic - Отчество клиента.
-   * @param {string} payload.birthday - Дата рождения клиента.
-   * @param {string|null} payload.gender - Пол клиента.
    */
   function add(payload) {
-    const newId = createNewClientId(clients);
-    payload.id = newId;
-
     clients.push(payload);
   }
 
+  /**
+   * Добавляет клиента из редактирования
+   */
   function setClientOfEdit(payload) {
     clients.push(payload);
+    currentClientId.value = clients.length;
   }
 
   /**
    * Добавляет нового пустого клиента в список и делает его активным.
-   *
-   * @returns {number} - ID нового клиента.
+   * @returns {number} - Индекс нового клиента (начиная с 1)
    */
   const addEmpty = () => {
-    const newId = createNewClientId(clients);
-    clients.push(createNewClient(newId));
-    currentClientId.value = newId;
-
-    return newId;
+    const newClient = createNewClient();
+    clients.push(newClient);
+    const newIndex = clients.length;
+    currentClientId.value = newIndex;
+    return newIndex;
   };
 
   /**
-   * Обновляет данные активного клиента на основе переданных временных данных.
-   *
-   * @param {number} id - ID клиента, которого нужно обновить.
-   * @param {Object} currentTempClient - Реактивный объект с временными данными клиента.
-   * @param {string} currentTempClient.value.name - Новое имя клиента.
-   * @param {string} currentTempClient.value.surname - Новая фамилия клиента.
-   * @param {string} currentTempClient.value.patronymic - Новое отчество клиента.
-   * @param {string} currentTempClient.value.birthday - Новая дата рождения клиента.
-   * @param {string|null} currentTempClient.value.gender - Новый пол клиента.
+   * Обновляет данные активного клиента.
+   * @param {number} index - Индекс клиента (начиная с 1)
+   * @param {Object} currentTempClient - Временные данные клиента
    */
-  const updateActiveClient = (id, currentTempClient) => {
-    const activeClient = findClientById(clients, id);
-
-    activeClient.name = currentTempClient.value.name;
-    activeClient.surname = currentTempClient.value.surname;
-    activeClient.patronymic = currentTempClient.value.patronymic;
-    activeClient.birthday = currentTempClient.value.birthday;
-    activeClient.gender = currentTempClient.value.gender;
-    activeClient.isNew = true;
+  const updateActiveClient = (index, currentTempClient) => {
+    const zeroBasedIndex = index - 1;
+    if (zeroBasedIndex >= 0 && zeroBasedIndex < clients.length) {
+      const activeClient = clients[zeroBasedIndex];
+      activeClient.name = currentTempClient.name;
+      activeClient.surname = currentTempClient.surname;
+      activeClient.patronymic = currentTempClient.patronymic;
+      activeClient.birthday = currentTempClient.birthday;
+      activeClient.gender = currentTempClient.gender;
+    }
   };
 
   /**
-   * Удаляет клиента из списка по его ID.
-   * После удаления переопределяет ID оставшихся клиентов и обновляет активного клиента.
-   *
-   * @param {number} id - ID клиента, которого нужно удалить.
+   * Удаляет клиента из списка по его индексу.
+   * @param {number} index - Индекс клиента (начиная с 1)
    */
-  const deleteClient = (id) => {
-    const index = findClientIndexById(clients, id);
-    if (index === -1) return;
+  const deleteClient = (index) => {
+    const zeroBasedIndex = index - 1;
+    if (zeroBasedIndex >= 0 && zeroBasedIndex < clients.length) {
+      clients.splice(zeroBasedIndex, 1);
 
-    removeClientByIndex(clients, index);
-    // reassignClientIds(clients);
-    updateActiveClientAfterDeletion({
-      clients,
-      currentClientId,
-      deletedClientId: id,
-      index,
-    });
+      // После удаления всегда активируем первый клиент
+      if (clients.length > 0) {
+        currentClientId.value = 1;
+      } else {
+        currentClientId.value = null;
+      }
+    }
   };
 
+  /**
+   * Сбрасывает стор
+   */
   const reset = () => {
     clients.splice(0, clients.length);
     currentClientId.value = null;

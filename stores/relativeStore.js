@@ -35,13 +35,13 @@ export const useRelativesStore = defineStore("relatives", () => {
 
   /**
    * Добавляет нового пустого родственника в список.
-   * @returns {number|string} - ID нового родственника.
+   * @returns {void}
    */
   const addEmpty = () => {
-    const newId = createNewRelativeId(relatives);
-    relatives.push(createNewRelative(newId));
-    currentRelativeId.value = newId;
-    return newId;
+    const newRelative = createNewRelative();
+    relatives.push(newRelative);
+    currentRelativeId.value = relatives.length; // Используем индекс для отслеживания текущего родственника
+    return relatives.length;
   };
 
   /**
@@ -62,7 +62,6 @@ export const useRelativesStore = defineStore("relatives", () => {
         currentTempRelative.value.relativeTypeId
       );
       activeRelative.telephone = currentTempRelative.value.telephone;
-      activeRelative.isNew = true;
     }
   };
 
@@ -86,7 +85,17 @@ export const useRelativesStore = defineStore("relatives", () => {
   };
 
   function setRelativeOfEdit(payload) {
-    relatives.push(payload);
+    // Если у родственника есть relativeId из БД, используем его
+    if (payload.relativeId) {
+      relatives.push({
+        ...payload,
+        id: payload.relativeId,
+      });
+    } else {
+      // Для новых родственников не устанавливаем id
+      const { id, ...relativeWithoutId } = payload;
+      relatives.push(relativeWithoutId);
+    }
   }
 
   const reset = () => {
