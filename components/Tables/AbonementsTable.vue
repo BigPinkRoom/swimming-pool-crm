@@ -213,7 +213,9 @@ onMounted(() => {
                   class="abonements-table__client-info"
                 >
                   {{ client.clientName }} {{ client.clientSurname }}
-                  {{ client.clientPatronymic }}
+                  <span class="abonements-table__client-info--patronymic">{{
+                    client.clientPatronymic
+                  }}</span>
                 </div>
               </div>
             </div>
@@ -309,6 +311,9 @@ onMounted(() => {
     display: flex;
     align-items: stretch;
     height: 40px;
+
+    color: var(--color-main-tertiary);
+
     background-color: var(--color-main-tertiary-lightest);
     border-bottom: 1px solid var(--color-main-tertiary-lighter);
   }
@@ -357,6 +362,9 @@ onMounted(() => {
 
   &__body-row {
     display: flex;
+
+    color: var(--color-main-tertiary);
+
     border-bottom: 1px solid var(--color-main-tertiary-lighter);
   }
 
@@ -414,14 +422,22 @@ onMounted(() => {
   &__client-info {
     width: 100%;
     padding: 4px;
+
+    font-size: 1.4rem;
     text-align: left;
-    border-bottom: 1px solid var(--color-main-tertiary-lighter);
     white-space: nowrap;
-    overflow: hidden;
     text-overflow: ellipsis;
+
+    border-bottom: 1px solid var(--color-main-tertiary-lighter);
+    overflow: hidden;
 
     &:last-child {
       border-bottom: none;
+    }
+
+    &--patronymic {
+      font-weight: 300;
+      font-size: 1.2rem;
     }
   }
 

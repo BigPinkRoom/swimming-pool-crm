@@ -113,6 +113,7 @@
     &--surname {
       display: block;
 
+      font-size: 1.2rem;
       font-weight: 300;
       color: var(--color-main-tertiary-light);
     }
