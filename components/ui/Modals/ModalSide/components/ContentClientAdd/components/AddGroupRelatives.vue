@@ -2,18 +2,20 @@
 клиента * @module AddGroupRelatives */
 
 <script setup>
-import vInput from "@/components/ui/Fields/Input";
-import CardTable from "@/components/Common/CardTable.vue";
-
+import { reactive, ref, computed, nextTick } from "vue";
+import { useForm } from "vee-validate";
+import { toTypedSchema } from "@vee-validate/zod";
+import Cleave from "cleave.js";
 import { uuid } from "vue-uuid";
 
+import vInput from "@/components/ui/Fields/Input";
+import vCloseButton from "@/components/ui/Buttons/ButtonClose.vue";
+import CardTable from "@/components/Common/CardTable.vue";
+
 import { useRelativesStore } from "@/stores/relativeStore";
-
 import { relativeAddValidationSchema } from "@/schemas/zod/relativeSchemas";
-
 import RelativeEntity from "@/entities/relativeEntity";
 import "cleave.js/dist/addons/cleave-phone.ru";
-
 import { relativesConstants } from "@/constants/relatives";
 
 /**
@@ -29,6 +31,9 @@ const props = defineProps({
   actionType: {
     type: Object,
   },
+  closeButton: {
+    type: Boolean,
+  },
 });
 
 const { $services } = useNuxtApp();
@@ -36,28 +41,34 @@ const { $i18n } = useNuxtApp();
 const t = $i18n.t;
 const relativesStore = useRelativesStore();
 const uuidV4 = uuid.v4();
-let relativeIdCounter = 1;
-
-// Состояние компонента
-const showOneMoreRelative = ref(true);
-const relativeAddToStoreLoading = ref(false);
-const tempRelatives = reactive({});
-const telephoneMask = ref(null);
-const isEditing = ref(true);
 const { checkValuesForValidateReset } = new RelativeEntity();
 
+const validationSchema = toTypedSchema(relativeAddValidationSchema(t));
+
 /**
- * Вычисляемое свойство для получения секций родственников
- * @type {ComputedRef}
+ * @type {Object} Форма с валидацией
  */
-const relativeSections = computed(() => {
-  console.log("currentRelativeId", relativesStore.currentRelativeId);
-  return $services.relatives.getRelativesSections(
-    relativesStore.relatives,
-    relativesStore.currentRelativeId
-  );
+const { errors, values, meta, validate, resetForm } = useForm({
+  validationSchema,
+  initialValues: {
+    name: "",
+    surname: "",
+    patronymic: "",
+    relativeTypeId: 1,
+    telephone: "",
+  },
 });
 
+// Состояние компонента
+const tempRelatives = reactive({});
+const showOneMoreRelative = ref(true);
+const telephoneMask = ref(null);
+const isEditing = ref(true);
+const relativeAddToStoreLoading = ref(false);
+
+defineEmits(["close"]);
+
+// Загрузка типов родственников при инициализации компонента
 const { data: relativeTypesData } = await useAsyncData(
   "relativeTypes",
   async () => {
@@ -69,83 +80,31 @@ const { data: relativeTypesData } = await useAsyncData(
 relativesStore.setRelativesTypes(relativeTypesData.value);
 
 /**
- * Схема валидации для формы добавления родственника
- * @type {Object}
+ * @computed
+ * @returns {Object} Секции родственников
  */
-const validationSchema = toTypedSchema(relativeAddValidationSchema(t));
+const relativeSections = computed(() =>
+  $services.relatives.getRelativesSections(
+    relativesStore.relatives,
+    relativesStore.currentRelativeId
+  )
+);
 
 /**
- * Добавляет нового родственника в список
- * @async
- * @returns {Promise<void>}
+ * @computed
+ * @returns {Object} Текущий временный родственник
  */
-const addOneMoreRelatives = async () => {
-  if ($services.relatives.isMaxRelativesLimitReached(relativesStore.relatives))
-    return;
-
-  const newRelativeId = relativesStore.addEmpty();
-  relativesStore.currentRelativeId = newRelativeId;
-
-  showOneMoreRelative.value = true;
-  // getTempRelative(newRelativeId);
-  resetForm({
-    values: {
-      name: "",
-      surname: "",
-      patronymic: "",
-      relativeTypeId: 1,
-      telephone: "",
-    },
-  });
-  await nextTick();
-  addInputMask();
-};
+const currentTempRelative = computed(() =>
+  getTempRelative(relativesStore.currentRelativeId)
+);
 
 /**
- * Форма с валидацией для добавления родственника
- * @type {Object}
- */
-const { errors, values, meta, validate, resetForm } = useForm({
-  validationSchema,
-  initialValues: {
-    name: "",
-    surname: "",
-    patronymic: "",
-    relativeTypeId: 1,
-    telephone: "",
-    isNew: true,
-  },
-});
-
-/**
- * Получает временные данные родственника по ID
- * @param {string} relativeId - ID родственника
- * @returns {Object} Данные родственника
- */
-const getTempRelative = (relativeId) => {
-  if (!tempRelatives[relativeId]) {
-    tempRelatives[relativeId] = {
-      id: relativeId,
-      name: "",
-      surname: "",
-      patronymic: "",
-      relativeTypeId: 1,
-      telephone: "",
-    };
-  }
-
-  return tempRelatives[relativeId];
-};
-
-/**
- * Вычисляемое свойство для текста кнопки добавления родственника
- * @type {ComputedRef<string>}
+ * @computed
+ * @returns {String} Текст для кнопки добавления родственника
  */
 const addRelativeText = computed(() => {
   const checkRelativeLessMax =
-    relativesStore.relatives.length <
-      relativesConstants.MAX_QUANTITY_RELATIVES &&
-    relativesConstants.MAX_QUANTITY_RELATIVES !== 0;
+    relativesStore.relatives.length < relativesConstants.MAX_QUANTITY_RELATIVES;
   const checkRelativeEqualMax =
     relativesStore.relatives.length >=
     relativesConstants.MAX_QUANTITY_RELATIVES;
@@ -160,8 +119,25 @@ const addRelativeText = computed(() => {
 });
 
 /**
+ * Получает временные данные родственника по индексу
+ * @param {number} index - Индекс родственника (начиная с 1)
+ * @returns {Object} Данные родственника
+ */
+const getTempRelative = (index) => {
+  if (!tempRelatives[index]) {
+    tempRelatives[index] = {
+      name: "",
+      surname: "",
+      patronymic: "",
+      relativeTypeId: 1,
+      telephone: "",
+    };
+  }
+  return tempRelatives[index];
+};
+
+/**
  * Добавляет маску для ввода телефона
- * @returns {void}
  */
 const addInputMask = () => {
   if (telephoneMask.value?.$el) {
@@ -184,31 +160,7 @@ const addInputMask = () => {
 };
 
 /**
- * Переключает режим редактирования для родственника
- * @async
- * @param {string} id - ID родственника
- * @returns {Promise<void>}
- */
-const changeEdit = async (id) => {
-  relativesStore.currentRelativeId = id;
-
-  toggleEditing(true);
-
-  if (checkValuesForValidateReset(currentTempRelative)) {
-    resetForm();
-  } else {
-    validate();
-  }
-
-  await nextTick();
-  addInputMask();
-};
-
-/**
  * Переключает режим редактирования
- * @async
- * @param {boolean} value - Новое значение режима редактирования
- * @returns {Promise<void>}
  */
 const toggleEditing = async (value) => {
   if (value === true) {
@@ -219,8 +171,48 @@ const toggleEditing = async (value) => {
 };
 
 /**
+ * Добавляет нового родственника
+ */
+const addOneMoreRelatives = async () => {
+  if ($services.relatives.isMaxRelativesLimitReached(relativesStore.relatives))
+    return;
+
+  const newIndex = relativesStore.addEmpty();
+  relativesStore.currentRelativeId = newIndex;
+
+  showOneMoreRelative.value = true;
+  resetForm({
+    values: {
+      name: "",
+      surname: "",
+      patronymic: "",
+      relativeTypeId: 1,
+      telephone: "",
+    },
+  });
+  await nextTick();
+  addInputMask();
+};
+
+/**
+ * Изменяет режим редактирования для родственника
+ */
+const changeEdit = async (index) => {
+  relativesStore.currentRelativeId = index;
+  toggleEditing(true);
+
+  if (checkValuesForValidateReset(currentTempRelative.value)) {
+    resetForm();
+  } else {
+    validate();
+  }
+
+  await nextTick();
+  addInputMask();
+};
+
+/**
  * Показывает индикатор загрузки при добавлении родственника
- * @returns {void}
  */
 const showRelativeAddToStoreLoading = () => {
   relativeAddToStoreLoading.value = true;
@@ -232,17 +224,14 @@ const showRelativeAddToStoreLoading = () => {
 
 /**
  * Добавляет родственника в хранилище
- * @async
- * @param {string} activeRelativeId - ID активного родственника
- * @returns {Promise<void>}
  */
-const addRelativeToStore = async (activeRelativeId) => {
+const addRelativeToStore = async (activeIndex) => {
   try {
     const resultValidate = await validate();
     if (resultValidate.valid) {
       relativesStore.updateActiveRelative(
-        activeRelativeId,
-        currentTempRelative
+        activeIndex,
+        currentTempRelative.value
       );
       showRelativeAddToStoreLoading();
     }
@@ -252,65 +241,43 @@ const addRelativeToStore = async (activeRelativeId) => {
 };
 
 /**
- * Вычисляемое свойство для получения текущего временного родственника
- * @type {ComputedRef<Object>}
- */
-const currentTempRelative = computed(() =>
-  getTempRelative(relativesStore.currentRelativeId)
-);
-
-/**
  * Удаляет родственника
- * @param {string} id - ID родственника для удаления
- * @returns {void}
  */
-const deleteRelative = async (id) => {
-  // Удаляем родственника из хранилищ
-  relativesStore.deleteRelative(id);
-  delete tempRelatives[id];
+const deleteRelative = async (index) => {
+  relativesStore.deleteRelative(index);
+  delete tempRelatives[index];
 
-  // Если родственники остались, активируем следующего
   if (relativesStore.relatives.length > 0) {
-    const nextRelative = relativesStore.relatives[0];
-
-    // Активируем этого следующего родственника
-    relativesStore.currentRelativeId = nextRelative.id;
-
-    // Обновляем форму
+    relativesStore.currentRelativeId = 1;
     await nextTick();
-    resetForm({ values: nextRelative });
+    resetForm({ values: getTempRelative(1) });
     toggleEditing(true);
   }
 };
 
 /**
  * Получает тип родственника по ID
- * @param {number} relativeId - ID типа родственника
- * @returns {string} Название типа родственника
  */
 const setRelativeTypeById = (relativeId) => {
-  const relativeType = relativesStore.relativesTypes.find((relativeTypeId) => {
-    return relativeTypeId.value === relativeId;
-  });
-
+  const relativeType = relativesStore.relativesTypes.find(
+    (type) => type.value === relativeId
+  );
   return relativeType?.text;
 };
 
+/**
+ * Устанавливает данные для редактирования
+ */
 const setEditRelative = () => {
   relativesStore.reset();
-  let counter = 1;
 
   if (props.actionType?.type === "edit" && props.actionType.family?.relatives) {
     const relatives = props.actionType.family.relatives;
 
-    // Очищаем временное хранилище
     Object.keys(tempRelatives).forEach((key) => delete tempRelatives[key]);
-    // Добавляем родственников в хранилище и заполняем временные данные
-    relatives.forEach((relative) => {
-      const relativeId = relative.relativeId || counter; // Используем ID из БД или генерируем новый числовой ID
-      counter++;
+
+    relatives.forEach((relative, index) => {
       const relativeForStore = {
-        id: relativeId,
         name: relative.relativeName || "",
         surname: relative.relativeSurname || "",
         patronymic: relative.relativePatronymic || "",
@@ -318,33 +285,38 @@ const setEditRelative = () => {
         telephone: relative.relativeTelephone || "",
       };
 
+      // Если это существующий родственник из БД, добавляем его id
+      if (relative.relativeId) {
+        relativeForStore.id = relative.relativeId;
+      }
+
       relativesStore.setRelativeOfEdit(relativeForStore);
-      tempRelatives[relativeId] = { ...relativeForStore };
+      tempRelatives[index + 1] = { ...relativeForStore };
     });
 
-    // Активируем редактирование для первого родственника
     if (relatives.length > 0) {
-      const firstRelativeId = Number(Object.keys(tempRelatives)[0]);
-
-      relativesStore.currentRelativeId = firstRelativeId;
+      relativesStore.currentRelativeId = 1;
       toggleEditing(true);
-
-      // Обновляем значения формы
       resetForm({
         values: {
-          ...tempRelatives[firstRelativeId],
+          ...tempRelatives[1],
         },
       });
     }
-  } else {
-    console.warn("No valid relative data provided for editing");
   }
 };
 
+/**
+ * Закрывает модальное окно
+ */
+const close = () => {
+  emit("close");
+};
+
 watch(
-  () => props.actionType.family,
+  () => props.actionType?.family,
   () => {
-    if (props.actionType.type === "edit") {
+    if (props.actionType?.type === "edit") {
       setEditRelative();
     } else {
       relativesStore.reset();
@@ -358,7 +330,7 @@ watch(
     <CardTable class="card-table__wrapper--gray">
       <template #title>
         <legend class="card-table__title card-table__title--gray">
-          {{ $t(`forms.client.${actionType}.fieldsets.relatives.label`) }}
+          {{ $t(`forms.client.${actionType.type}.fieldsets.relatives.label`) }}
         </legend>
       </template>
       <template #content>
@@ -411,7 +383,11 @@ watch(
                   relativeSections.active.surname
                 }}</span>
               </div>
-              <div class="card-table__table-td card-table--type"></div>
+              <div class="card-table__table-td card-table--type">
+                {{
+                  setRelativeTypeById(relativeSections.active.relativeTypeId)
+                }}
+              </div>
               <div class="card-table__table-td card-table--actions">
                 <div class="card-table__actions">
                   <img
@@ -598,6 +574,8 @@ watch(
   &__fieldset {
     position: relative;
     border: 0;
+
+    padding-left: 0;
   }
 
   &__legend {
