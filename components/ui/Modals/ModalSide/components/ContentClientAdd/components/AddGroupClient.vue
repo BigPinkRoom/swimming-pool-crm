@@ -54,7 +54,7 @@ const { errors, values, meta, validate, resetForm } = useForm({
     surname: "",
     patronymic: "",
     birthday: "",
-    gender: 1,
+    gender: 0,
   },
 });
 
@@ -130,54 +130,34 @@ const toggleEditing = async (value) => {
 
 const setEditClient = () => {
   clientsStore.reset();
-  let counter = 1;
 
-  // Проверяем, что есть данные для редактирования
   if (props.actionType?.type === "edit" && props.actionType.family?.clients) {
     const clients = props.actionType.family.clients;
-
-    // Очищаем временное хранилище
     Object.keys(tempClients).forEach((key) => delete tempClients[key]);
 
-    // Добавляем клиентов в хранилище и заполняем временные данные
-    clients.forEach((client) => {
-      const clientId = client.clientId || counter;
-      counter++;
-
-      // Создаем объект клиента для хранилища
+    clients.forEach((client, index) => {
       const clientForStore = {
-        id: clientId,
         name: client.clientName || "",
         surname: client.clientSurname || "",
-        gender: client.clientGender || 1,
+        gender: client.clientGender || 0,
         birthday: formatDate(client.clientBirthday) || "",
         patronymic: client.clientPatronymic || "",
       };
 
-      // Добавляем клиента в хранилище
-      clientsStore.setClientOfEdit(clientForStore);
+      // Добавляем ID только если он пришел из БД (т.е. клиент существует)
+      if (client.clientId) {
+        clientForStore.id = client.clientId;
+      }
 
-      // Заполняем временное хранилище для формы
-      tempClients[clientId] = {
-        ...clientForStore,
-      };
+      clientsStore.setClientOfEdit(clientForStore);
+      tempClients[index + 1] = { ...clientForStore };
     });
 
-    // Активируем редактирование для первого клиента
     if (clients.length > 0) {
-      const firstClientId = clients[0].clientId || clients[0].id;
-      clientsStore.currentClientId = firstClientId;
+      clientsStore.currentClientId = 1;
       toggleEditing(true);
-
-      // Обновляем значения формы
-      resetForm({
-        values: {
-          ...tempClients[firstClientId],
-        },
-      });
+      resetForm({ values: { ...tempClients[1] } });
     }
-  } else {
-    console.warn("No valid client data provided for editing");
   }
 };
 
@@ -206,33 +186,34 @@ const addInputMask = async () => {
 
 /**
  * Получает или создает временного клиента
- * @param {String} clientId - ID клиента
+ * @param {number} index - Индекс клиента (начиная с 1)
  * @returns {Object} Данные клиента
  */
-const getTempClient = (clientId) => {
-  if (!tempClients[clientId]) {
-    tempClients[clientId] = {
-      id: clientId,
+const getTempClient = (index) => {
+  if (!tempClients[index]) {
+    tempClients[index] = {
       name: "",
       surname: "",
       patronymic: "",
       birthday: "",
-      gender: 1,
+      gender: 0,
     };
   }
-  return tempClients[clientId];
+  return tempClients[index];
 };
 
 /**
  * Изменяет режим редактирования для клиента
- * @param {String} id - ID клиента
+ * @param {number} index - Индекс клиента (начиная с 1)
  */
-const changeEdit = async (id) => {
-  clientsStore.currentClientId = id;
-
+const changeEdit = async (index) => {
+  clientsStore.currentClientId = index;
   toggleEditing(true);
 
-  if (checkValuesForValidateReset(currentTempClient)) {
+  // Первым получаем currentTempClient после установки clientsStore.currentClientId
+  const tempClient = currentTempClient;
+
+  if (checkValuesForValidateReset(tempClient)) {
     resetForm();
   } else {
     validate();
@@ -248,20 +229,17 @@ const changeEdit = async (id) => {
 const addOneMoreClients = async () => {
   if ($services.clients.isMaxClientsLimitReached(clientsStore.clients)) return;
 
-  const newClientId = clientsStore.addEmpty();
-  clientsStore.currentClientId = newClientId;
-
+  const newIndex = clientsStore.addEmpty();
+  clientsStore.currentClientId = newIndex;
   showOneMoreClient.value = true;
 
-  // Сбрасываем форму с пустыми значениями
   resetForm({
     values: {
       name: "",
       surname: "",
       patronymic: "",
       birthday: "",
-      gender: 1,
-      isNew: true,
+      gender: 0,
     },
   });
 
@@ -286,6 +264,24 @@ const getGenderImage = (gender) => {
 };
 
 /**
+ * Добавляет клиента в хранилище
+ * @param {number} activeIndex - Индекс активного клиента (начиная с 1)
+ */
+const addClientToStore = async (activeIndex) => {
+  try {
+    const resultValidate = await validate();
+    if (resultValidate.valid) {
+      // Явно получаем значение из computed свойства
+      const tempClient = { ...currentTempClient.value };
+      clientsStore.updateActiveClient(activeIndex, tempClient);
+      showClientAddToStoreLoading();
+    }
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
  * Показывает индикатор загрузки при добавлении клиента
  */
 const showClientAddToStoreLoading = () => {
@@ -297,23 +293,6 @@ const showClientAddToStoreLoading = () => {
 };
 
 /**
- * Добавляет клиента в хранилище
- * @param {String} activeClientId - ID активного клиента
- */
-const addClientToStore = async (activeClientId) => {
-  try {
-    const resultValidate = await validate();
-
-    if (resultValidate.valid) {
-      clientsStore.updateActiveClient(activeClientId, currentTempClient);
-      showClientAddToStoreLoading();
-    }
-  } catch (error) {
-    throw error;
-  }
-};
-
-/**
  * Закрывает модальное окно
  */
 const close = () => {
@@ -322,23 +301,16 @@ const close = () => {
 
 /**
  * Удаляет клиента и активирует следующего
- * @param {String} id - ID клиента для удаления
+ * @param {number} index - Индекс клиента для удаления (начиная с 1)
  */
-const deleteClient = async (id) => {
-  // Удаляем клиента из хранилищ
-  clientsStore.deleteClient(id);
-  delete tempClients[id];
+const deleteClient = async (index) => {
+  clientsStore.deleteClient(index);
+  delete tempClients[index];
 
-  // Если клиенты остались, активируем следующего
   if (clientsStore.clients.length > 0) {
-    const nextClient = clientsStore.clients[0]; // Берем первого клиента из списка
-
-    // Активируем этого следующего клиента
-    clientsStore.currentClientId = nextClient.id;
-
-    // Обновляем форму
+    clientsStore.currentClientId = 1;
     await nextTick();
-    resetForm({ values: nextClient });
+    resetForm({ values: getTempClient(1) });
     toggleEditing(true);
   }
 };
@@ -389,8 +361,8 @@ watch(
           </div>
           <div
             class="card-table__table-tr"
-            v-for="item in clientSections.before"
-            :key="item.id"
+            v-for="(item, index) in clientSections.before"
+            :key="index"
           >
             <div class="card-table__table-td card-table--name">
               {{ item.name }}
@@ -407,7 +379,7 @@ watch(
                 <img
                   class="card-table__actions--edit"
                   src="/icons/edit.svg"
-                  @click="changeEdit(item.id)"
+                  @click="changeEdit(index + 1)"
                   alt=""
                 />
               </div>
@@ -435,7 +407,7 @@ watch(
                   <img
                     class="card-table__actions--edit"
                     src="/icons/edit.svg"
-                    @click="changeEdit(clientSections.active.id)"
+                    @click="changeEdit(clientsStore.currentClientId)"
                     alt=""
                   />
                 </div>
@@ -471,7 +443,7 @@ watch(
                   src="/icons/ok_icon.svg"
                   alt=""
                   class="card-table__actions-img"
-                  @click="addClientToStore(clientSections.active.id)"
+                  @click="addClientToStore(clientsStore.currentClientId)"
                 />
               </div>
               <div class="card-table__field">
@@ -540,7 +512,7 @@ watch(
               />
               <div
                 class="card-table__delete"
-                @click="deleteClient(clientSections.active.id)"
+                @click="deleteClient(clientsStore.currentClientId)"
               >
                 <div class="card-table__delete-text">Удалить</div>
                 <img
@@ -548,14 +520,14 @@ watch(
                   alt=""
                   class="card-table__delete-img"
                 />
+                {{ clientSections.active.id }}
               </div>
-              {{ clientSections.active.id }}
             </div>
           </div>
           <div
             class="card-table__table-tr"
-            v-for="item in clientSections.after"
-            :key="item.id"
+            v-for="(item, index) in clientSections.after"
+            :key="index"
           >
             <div class="card-table__table-td card-table--name">
               {{ item.name }}
@@ -572,7 +544,9 @@ watch(
                 <img
                   class="card-table__actions--edit"
                   src="/icons/edit.svg"
-                  @click="changeEdit(item.id)"
+                  @click="
+                    changeEdit(clientSections.before.length + 1 + index + 1)
+                  "
                   alt=""
                 />
               </div>
@@ -609,6 +583,8 @@ watch(
   &__fieldset {
     position: relative;
     border: 0;
+
+    padding-left: 0;
   }
 
   &__legend {
