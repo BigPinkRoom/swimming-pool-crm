@@ -40,7 +40,9 @@ const checkboxAbonementHandler = (value) => {
       <v-checkbox
         id="mainAbonementCheckbox"
         name="mainAbonementCheckbox"
-        :label="$t(`forms.client.${actionType}.fields.abonementBinding.label`)"
+        :label="
+          $t(`forms.client.${actionType.type}.fields.abonementBinding.label`)
+        "
         checked
         @checkboxChange="checkboxAbonementHandler"
       />
@@ -58,7 +60,7 @@ const checkboxAbonementHandler = (value) => {
     margin-bottom: 1.2rem;
 
     &--add-abonements {
-      padding-left: 12px;
+      padding-left: 0;
     }
   }
 

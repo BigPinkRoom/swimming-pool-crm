@@ -117,6 +117,7 @@ const subtitleClass = computed(() => ({
     height: 3.4rem;
 
     font-size: 1.4rem;
+    color: var(--color-main-tertiary);
 
     border: 0.1rem solid var(--color-main-tertiary-light-2);
     border-radius: 0.3rem;

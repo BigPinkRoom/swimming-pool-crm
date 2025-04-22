@@ -87,6 +87,8 @@ computed({
     margin-bottom: 1.2rem;
 
     font-size: 2rem;
+    font-weight: 500;
+    color: var(--color-main-tertiary);
     text-transform: uppercase;
   }
 
