@@ -1,7 +1,15 @@
 <template>
   <form class="client-main">
-    <div class="client-main__item" v-for="(client, index) in clientsList" :key="index">
-      <fieldset-client :action-type="actionType" :closeButton="addClose(index)" @close="deleteClient(index)" />
+    <div
+      class="client-main__item"
+      v-for="(client, index) in clientsList"
+      :key="index"
+    >
+      <fieldset-client
+        :action-type="actionType"
+        :closeButton="addClose(index)"
+        @close="deleteClient(index)"
+      />
     </div>
 
     <div class="client-main__item">
@@ -19,7 +27,9 @@
       <v-checkbox
         id="mainAbonementCheckbox"
         name="mainAbonementCheckbox"
-        :label="$t(`forms.client.${actionType}.fields.abonementBinding.label`)"
+        :label="
+          $t(`forms.client.${actionType.type}.fields.abonementBinding.label`)
+        "
         checked
         @checkboxChange="checkboxAbonementHandler"
       />
@@ -32,14 +42,14 @@
 </template>
 
 <script>
-import vButton from '@/components/ui/Buttons/ButtonMain';
-import vCheckbox from '@/components/ui/Checkboxes/MainCheckbox';
-import FieldsetClient from './components/MainGroupClient';
-import FieldsetAbonements from './components/MainGroupAbonements';
-import FieldsetRelatives from './components/MainGroupRelatives';
+import vButton from "@/components/ui/Buttons/ButtonMain";
+import vCheckbox from "@/components/ui/Checkboxes/MainCheckbox";
+import FieldsetClient from "./components/MainGroupClient";
+import FieldsetAbonements from "./components/MainGroupAbonements";
+import FieldsetRelatives from "./components/MainGroupRelatives";
 
 export default {
-  name: 'ClientEditMain',
+  name: "ClientEditMain",
   components: {
     vButton,
     vCheckbox,
@@ -60,7 +70,7 @@ export default {
   },
   computed: {
     actionType() {
-      return this.selectedClientData ? 'edit' : 'add';
+      return this.selectedClientData ? "edit" : "add";
     },
   },
   methods: {
