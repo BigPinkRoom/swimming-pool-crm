@@ -51,7 +51,7 @@ export default defineNuxtConfig({
     prefetch: true,
     preload: true,
     families: {
-      "Open+Sans": true,
+      "Open+Sans": [100, 300, 400, 500, 700],
     },
   },
 
