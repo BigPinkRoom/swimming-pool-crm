@@ -210,6 +210,8 @@ watch(tempAbonement, () => {
 .client-main {
   &__fieldset {
     position: relative;
+    padding-left: 0;
+
     border: 0;
   }
 

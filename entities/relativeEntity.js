@@ -23,7 +23,6 @@ export default class RelativeEntity {
     patronymic: "",
     relativeTypeId: 1,
     telephone: null,
-    isNew: true,
   });
 
   /**
