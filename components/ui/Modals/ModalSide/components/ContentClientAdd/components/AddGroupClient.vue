@@ -121,11 +121,12 @@ const currentTempClient = computed(() =>
  * @param {Boolean} value - Новое значение режима редактирования
  */
 const toggleEditing = async (value) => {
+  isEditing.value = value;
+
   if (value === true) {
     await nextTick();
     addInputMask();
   }
-  isEditing.value = value;
 };
 
 const setEditClient = () => {
@@ -155,9 +156,16 @@ const setEditClient = () => {
 
     if (clients.length > 0) {
       clientsStore.currentClientId = 1;
-      toggleEditing(true);
+      // Если клиенты есть, скрываем форму редактирования
+      isEditing.value = false;
       resetForm({ values: { ...tempClients[1] } });
+    } else {
+      // Если клиентов нет, добавляем пустого и показываем форму
+      addOneMoreClients();
     }
+  } else {
+    // Для нового добавления всегда показываем форму
+    addOneMoreClients();
   }
 };
 
@@ -208,7 +216,9 @@ const getTempClient = (index) => {
  */
 const changeEdit = async (index) => {
   clientsStore.currentClientId = index;
-  toggleEditing(true);
+
+  // Всегда включаем режим редактирования при нажатии на кнопку редактирования
+  isEditing.value = true;
 
   // Первым получаем currentTempClient после установки clientsStore.currentClientId
   const tempClient = currentTempClient;
@@ -245,6 +255,11 @@ const addOneMoreClients = async () => {
 
   await nextTick();
   addInputMask();
+
+  // Если это первый клиент (список был пуст), то показываем форму редактирования
+  // В противном случае (если клиенты уже есть) - скрываем форму
+  const isFirstClient = clientsStore.clients.length === 1;
+  isEditing.value = isFirstClient;
 };
 
 /**
@@ -273,8 +288,21 @@ const addClientToStore = async (activeIndex) => {
     if (resultValidate.valid) {
       // Явно получаем значение из computed свойства
       const tempClient = { ...currentTempClient.value };
+
+      // Определяем, будет ли это первый клиент
+      const isFirstClient = clientsStore.clients.length === 0;
+
+      // Добавляем клиента в хранилище
       clientsStore.updateActiveClient(activeIndex, tempClient);
-      showClientAddToStoreLoading();
+
+      // После добавления проверяем, был ли это первый клиент
+      if (isFirstClient) {
+        // Если это был первый клиент, скрываем форму редактирования
+        toggleEditing(false);
+      } else {
+        // Иначе показываем индикатор загрузки и добавляем нового клиента
+        showClientAddToStoreLoading();
+      }
     }
   } catch (error) {
     throw error;
@@ -307,11 +335,17 @@ const deleteClient = async (index) => {
   clientsStore.deleteClient(index);
   delete tempClients[index];
 
-  if (clientsStore.clients.length > 0) {
+  // Проверяем, остались ли клиенты
+  if (clientsStore.clients.length === 0) {
+    // Если клиентов не осталось, создаем нового и показываем форму редактирования
+    addOneMoreClients();
+  } else {
+    // Если клиенты остались, выбираем первого
     clientsStore.currentClientId = 1;
     await nextTick();
     resetForm({ values: getTempClient(1) });
-    toggleEditing(true);
+    // Скрываем форму редактирования
+    toggleEditing(false);
   }
 };
 
