@@ -3,7 +3,7 @@
 (добавление/редактирование) * @vue-prop {Boolean} closeButton - Флаг отображения
 кнопки закрытия */
 <script setup>
-import { reactive, ref, computed, nextTick } from "vue";
+import { reactive, ref, computed, nextTick, onMounted } from "vue";
 import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 
@@ -517,9 +517,20 @@ watch(
       setEditClient();
     } else {
       clientsStore.reset();
+      // При создании новой семьи сразу добавляем пустого клиента
+      addOneMoreClients();
     }
-  }
+  },
+  { immediate: true } // Добавляем immediate: true для немедленного выполнения при монтировании
 );
+
+// Инициализация компонента при необходимости
+onMounted(() => {
+  // Если список клиентов пуст и не в режиме редактирования, добавляем пустого клиента
+  if (clientsStore.clients.length === 0 && props.actionType?.type !== "edit") {
+    addOneMoreClients();
+  }
+});
 </script>
 
 <template>
