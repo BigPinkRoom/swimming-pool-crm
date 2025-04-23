@@ -42,6 +42,13 @@ const sendFamily = async () => {
         const { id, ...itemWithoutId } = item;
         return itemWithoutId;
       }
+
+      // Для временных идентификаторов (начинающихся с temp_), удаляем их перед отправкой
+      if (item.id && item.id.toString().startsWith("temp_")) {
+        const { id, ...itemWithoutId } = item;
+        return itemWithoutId;
+      }
+
       return item;
     });
   };
@@ -67,31 +74,46 @@ const sendFamily = async () => {
   return family;
 };
 
+/**
+ * Обновляет идентификаторы родственников и клиентов после ответа сервера
+ * @param {Object} response - Ответ сервера
+ */
+const updateIdsFromResponse = (response) => {
+  // Обновляем ID только у новых клиентов
+  if (response.createdClientIds) {
+    const newClients = clientsStore.clients.filter(
+      (client) =>
+        !client.id || (client.id && client.id.toString().startsWith("temp_"))
+    );
+    newClients.forEach((client, index) => {
+      if (response.createdClientIds[index]) {
+        client.id = response.createdClientIds[index];
+      }
+    });
+  }
+
+  // Обновляем ID только у новых родственников
+  if (response.createdRelativeIds) {
+    const newRelatives = relativesStore.relatives.filter(
+      (relative) =>
+        !relative.id ||
+        (relative.id && relative.id.toString().startsWith("temp_"))
+    );
+    newRelatives.forEach((relative, index) => {
+      if (response.createdRelativeIds[index]) {
+        relative.id = response.createdRelativeIds[index];
+        console.log(
+          `Родственнику установлен ID ${response.createdRelativeIds[index]} от сервера`
+        );
+      }
+    });
+  }
+};
+
 const updateFamily = async (request) => {
   try {
     const response = await $services.abonements.updateFamily(request);
-
-    // Обновляем ID только у новых клиентов
-    if (response.createdClientIds) {
-      const newClients = clientsStore.clients.filter((client) => !client.id);
-      newClients.forEach((client, index) => {
-        if (response.createdClientIds[index]) {
-          client.id = response.createdClientIds[index];
-        }
-      });
-    }
-
-    // Обновляем ID только у новых родственников
-    if (response.createdRelativeIds) {
-      const newRelatives = relativesStore.relatives.filter(
-        (relative) => !relative.id
-      );
-      newRelatives.forEach((relative, index) => {
-        if (response.createdRelativeIds[index]) {
-          relative.id = response.createdRelativeIds[index];
-        }
-      });
-    }
+    updateIdsFromResponse(response);
   } catch (error) {
     console.error("Error updating family data:", error);
     if (error.value?.data?.error?.message) {
@@ -109,7 +131,9 @@ const handleFormSubmit = async () => {
     if (actionType.value.type === "edit") {
       await updateFamily(request);
     } else {
-      await $services.abonements.addFamily(request);
+      // При добавлении новой семьи также обрабатываем ID от сервера
+      const response = await $services.abonements.addFamily(request);
+      updateIdsFromResponse(response);
     }
     closeModalSide();
   } catch (error) {

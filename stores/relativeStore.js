@@ -40,8 +40,6 @@ export const useRelativesStore = defineStore("relatives", () => {
   const addEmpty = () => {
     // Создаем нового родственника без ID
     const newRelative = createNewRelative();
-    // Удаляем id из объекта, так как его должен присвоить сервер
-    delete newRelative.id;
 
     // Добавляем родственника в список
     relatives.push(newRelative);
@@ -75,6 +73,11 @@ export const useRelativesStore = defineStore("relatives", () => {
       activeRelative.relativeTypeId = Number(relativeData.relativeTypeId || 1);
       activeRelative.telephone = relativeData.telephone || "";
 
+      // Сохраняем ID, если он есть
+      if (relativeData.id) {
+        activeRelative.id = relativeData.id;
+      }
+
       console.log("Родственник успешно обновлен:", activeRelative);
     } else {
       console.warn("Не удалось найти активного родственника для обновления", {
@@ -105,6 +108,10 @@ export const useRelativesStore = defineStore("relatives", () => {
     });
   };
 
+  /**
+   * Устанавливает данные родственника при редактировании.
+   * @param {Object} payload - Данные родственника.
+   */
   function setRelativeOfEdit(payload) {
     // Проверяем, не пустой ли payload
     if (!payload) return;
@@ -117,19 +124,47 @@ export const useRelativesStore = defineStore("relatives", () => {
       payload.telephone;
     if (!hasData) return;
 
-    // Если у родственника есть relativeId из БД, используем его
-    if (payload.relativeId) {
+    // Если у родственника есть ID из БД, сохраняем его
+    if (payload.id) {
+      relatives.push(payload);
+    } else if (payload.relativeId) {
+      // Если вместо id используется relativeId
       relatives.push({
         ...payload,
         id: payload.relativeId,
       });
     } else {
-      // Для новых родственников не устанавливаем id
-      const { id, ...relativeWithoutId } = payload;
-      relatives.push(relativeWithoutId);
+      // Для новых родственников без ID
+      relatives.push(payload);
     }
   }
 
+  /**
+   * Форматирует родственников для отправки на сервер.
+   * @returns {Array} Массив родственников, готовый для отправки на сервер.
+   */
+  const getFormattedRelativesForBackend = () => {
+    return relatives.map((relative) => {
+      const formattedRelative = {
+        relativeName: relative.name,
+        relativeSurname: relative.surname,
+        relativePatronymic: relative.patronymic,
+        relativeTypeId: relative.relativeTypeId,
+        relativeTelephone: relative.telephone,
+      };
+
+      // Добавляем ID только если он существует и это не временный ID
+      if (relative.id && !relative.id.toString().startsWith("temp_")) {
+        formattedRelative.relativeId = relative.id;
+      }
+
+      return formattedRelative;
+    });
+  };
+
+  /**
+   * Сбрасывает состояние хранилища.
+   */
   const reset = () => {
     relatives.splice(0, relatives.length);
     currentRelativeId.value = null;
@@ -144,6 +179,7 @@ export const useRelativesStore = defineStore("relatives", () => {
     deleteRelative,
     setRelativesTypes,
     setRelativeOfEdit,
+    getFormattedRelativesForBackend,
     reset,
   };
 });
