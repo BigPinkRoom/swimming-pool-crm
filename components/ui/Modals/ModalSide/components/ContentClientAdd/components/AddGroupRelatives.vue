@@ -136,16 +136,42 @@ const addRelativeText = computed(() => {
  * @returns {Object} Данные родственника
  */
 const getTempRelative = (indexOrId) => {
-  // Используем индекс или ID как ключ для tempRelatives
+  // Если временные данные еще не созданы
   if (!tempRelatives[indexOrId]) {
-    tempRelatives[indexOrId] = {
-      name: "",
-      surname: "",
-      patronymic: "",
-      relativeTypeId: 1,
-      telephone: "",
-    };
+    // Сначала попробуем найти родственника в основном хранилище
+    const relative = $services.relatives.findRelativeById(
+      relativesStore.relatives,
+      indexOrId
+    );
+
+    // Если нашли родственника в хранилище, используем его данные
+    if (relative) {
+      tempRelatives[indexOrId] = {
+        id: relative.id,
+        name: relative.name || "",
+        surname: relative.surname || "",
+        patronymic: relative.patronymic || "",
+        relativeTypeId: relative.relativeTypeId || 1,
+        telephone: relative.telephone || "",
+      };
+      console.log(
+        `Создан временный кэш для родственника с ID/индексом ${indexOrId} из данных хранилища`
+      );
+    } else {
+      // Если родственник не найден, создаем пустой объект
+      tempRelatives[indexOrId] = {
+        name: "",
+        surname: "",
+        patronymic: "",
+        relativeTypeId: 1,
+        telephone: "",
+      };
+      console.log(
+        `Создан пустой временный кэш для родственника с ID/индексом ${indexOrId}`
+      );
+    }
   }
+
   return tempRelatives[indexOrId];
 };
 
@@ -325,8 +351,36 @@ const changeEdit = async (index) => {
   relativesStore.currentRelativeId = index;
   toggleEditing(true);
 
-  // Обновляем данные формы на основе выбранного родственника
+  // Найдем родственника в хранилище
+  const storeRelative = $services.relatives.findRelativeById(
+    relativesStore.relatives,
+    index
+  );
+
+  // Если нашли родственника в хранилище, обновляем временный кэш
+  if (storeRelative) {
+    tempRelatives[index] = {
+      id: storeRelative.id,
+      name: storeRelative.name || "",
+      surname: storeRelative.surname || "",
+      patronymic: storeRelative.patronymic || "",
+      relativeTypeId: storeRelative.relativeTypeId || 1,
+      telephone: storeRelative.telephone || "",
+    };
+    console.log(
+      `Обновлен временный кэш для родственника с ID/индексом ${index} из данных хранилища`
+    );
+  }
+
+  // Получаем данные из временного кэша
   const relativeData = getTempRelative(index);
+
+  console.log(
+    `Данные для формы редактирования родственника ${index}:`,
+    relativeData
+  );
+
+  // Устанавливаем данные в форму
   resetForm({
     values: {
       name: relativeData.name || "",
@@ -546,18 +600,23 @@ const setRelativeTypeById = (relativeId) => {
  */
 const setEditRelative = () => {
   relativesStore.reset();
+  console.log("Сбрасываем хранилище родственников");
+
+  // Очищаем временный кэш
+  Object.keys(tempRelatives).forEach((key) => delete tempRelatives[key]);
+  console.log("Очищаем временный кэш родственников");
 
   if (props.actionType?.type === "edit" && props.actionType.family?.relatives) {
     const relatives = props.actionType.family.relatives;
+    console.log("Получены родственники для редактирования:", relatives);
 
     // Проверяем, есть ли вообще родственники в массиве
     if (!relatives || relatives.length === 0) {
+      console.log("Родственники отсутствуют, открываем форму для добавления");
       // Если родственников нет, автоматически открываем форму для добавления
       addOneMoreRelatives();
       return;
     }
-
-    Object.keys(tempRelatives).forEach((key) => delete tempRelatives[key]);
 
     relatives.forEach((relative, index) => {
       // Убедимся, что объект relative не undefined и не null
@@ -574,19 +633,62 @@ const setEditRelative = () => {
       // Если это существующий родственник из БД, добавляем его id
       if (relative.relativeId) {
         relativeForStore.id = relative.relativeId;
+        console.log(
+          `Установлен ID ${relative.relativeId} для родственника №${index + 1}`
+        );
       }
 
+      // Добавляем родственника в хранилище
       relativesStore.setRelativeOfEdit(relativeForStore);
+
+      // Синхронизируем временный кэш с id+1, чтобы соответствовать ожидаемым индексам UI
       tempRelatives[index + 1] = { ...relativeForStore };
+      console.log(
+        `Родственник №${index + 1} добавлен в хранилище и временный кэш:`,
+        relativeForStore
+      );
     });
 
     if (relatives.length > 0) {
-      relativesStore.currentRelativeId = 1;
+      // Устанавливаем текущий ID первого родственника
+      const firstRelative = relativesStore.relatives[0];
+      relativesStore.currentRelativeId = firstRelative.id || 1;
+
+      console.log(
+        `Установлен текущий ID родственника: ${relativesStore.currentRelativeId}`
+      );
+      console.log(`Данные первого родственника:`, firstRelative);
+
+      // Обновляем временный кэш для текущего ID
+      if (!tempRelatives[relativesStore.currentRelativeId]) {
+        tempRelatives[relativesStore.currentRelativeId] = { ...firstRelative };
+      }
+
       // Скрываем режим редактирования только если есть родственники
       toggleEditing(false);
-      resetForm({ values: { ...tempRelatives[1] } });
+
+      // Получаем данные из временного кэша для текущего родственника
+      const currentRelativeData = getTempRelative(
+        relativesStore.currentRelativeId
+      );
+      console.log(
+        `Данные для формы текущего родственника:`,
+        currentRelativeData
+      );
+
+      // Сбрасываем форму с данными текущего родственника
+      resetForm({
+        values: {
+          name: currentRelativeData.name || "",
+          surname: currentRelativeData.surname || "",
+          patronymic: currentRelativeData.patronymic || "",
+          relativeTypeId: currentRelativeData.relativeTypeId || 1,
+          telephone: currentRelativeData.telephone || "",
+        },
+      });
     }
   } else if (props.actionType?.type === "add") {
+    console.log("Режим добавления нового клиента, открываем форму");
     // Если это добавление нового клиента, автоматически открываем форму
     addOneMoreRelatives();
   }

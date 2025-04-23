@@ -186,7 +186,10 @@ export default class Relatives {
     const indexById = relatives.findIndex(
       (relative) => relative && relative.id === idOrIndex
     );
-    if (indexById !== -1) return indexById;
+
+    if (indexById !== -1) {
+      return indexById;
+    }
 
     // Если не нашли по id, проверяем, не является ли параметр индексом
     const index = idOrIndex - 1; // Конвертируем 1-based индекс в 0-based
@@ -204,13 +207,18 @@ export default class Relatives {
    * @returns {Object} Найденный родственник
    */
   findRelativeById = (relatives, idOrIndex) => {
-    if (!relatives || !idOrIndex) return null;
+    if (!relatives || !idOrIndex) {
+      return null;
+    }
 
     // Сначала ищем по id
     const byId = relatives.find(
-      (relative) => relative && relative.id === idOrIndex
+      (relative) => relative && String(relative.id) === String(idOrIndex)
     );
-    if (byId) return byId;
+
+    if (byId) {
+      return byId;
+    }
 
     // Если не нашли по id, проверяем позицию в массиве
     const index = idOrIndex - 1; // Конвертируем 1-based индекс в 0-based
