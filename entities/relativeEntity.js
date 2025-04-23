@@ -31,12 +31,20 @@ export default class RelativeEntity {
    * @returns {boolean} - true, если все поля пустые, иначе false.
    */
   checkValuesForValidateReset = (currentTempRelative) => {
+    // Проверяем, что currentTempRelative и value существуют
+    if (!currentTempRelative || !currentTempRelative.value) {
+      return true;
+    }
+
+    const { name, surname, patronymic, relativeTypeId, telephone } =
+      currentTempRelative.value;
+
     const fieldsCheck = [
-      Boolean(currentTempRelative.value.name),
-      Boolean(currentTempRelative.value.surname),
-      Boolean(currentTempRelative.value.patronymic),
-      Boolean(currentTempRelative.value.relativeTypeId),
-      Boolean(currentTempRelative.value.telephone),
+      Boolean(name),
+      Boolean(surname),
+      Boolean(patronymic),
+      Boolean(relativeTypeId && relativeTypeId !== 1), // 1 - значение по умолчанию
+      Boolean(telephone),
     ].every((field) => field === false);
 
     return fieldsCheck;

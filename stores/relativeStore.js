@@ -35,33 +35,54 @@ export const useRelativesStore = defineStore("relatives", () => {
 
   /**
    * Добавляет нового пустого родственника в список.
-   * @returns {void}
+   * @returns {number} Временный индекс для идентификации родственника в UI
    */
   const addEmpty = () => {
+    // Создаем нового родственника без ID
     const newRelative = createNewRelative();
+    // Удаляем id из объекта, так как его должен присвоить сервер
+    delete newRelative.id;
+
+    // Добавляем родственника в список
     relatives.push(newRelative);
-    currentRelativeId.value = relatives.length; // Используем индекс для отслеживания текущего родственника
-    return relatives.length;
+
+    // Используем индекс массива как временный идентификатор для UI
+    const tempIndex = relatives.length;
+    currentRelativeId.value = tempIndex;
+
+    return tempIndex;
   };
 
   /**
    * Обновляет данные активного родственника.
-   * @param {number|string} id - ID родственника для обновления.
+   * @param {number|string} idOrIndex - ID или индекс родственника для обновления.
    * @param {Object} currentTempRelative - Временный объект с новыми данными.
    */
-
-  const updateActiveRelative = (id, currentTempRelative) => {
+  const updateActiveRelative = (idOrIndex, currentTempRelative) => {
     console.log("Главный стор родственников", relatives);
-    const activeRelative = findRelativeById(relatives, id);
+    const activeRelative = findRelativeById(relatives, idOrIndex);
 
     if (activeRelative) {
-      activeRelative.name = currentTempRelative.value.name;
-      activeRelative.surname = currentTempRelative.value.surname;
-      activeRelative.patronymic = currentTempRelative.value.patronymic;
-      activeRelative.relativeTypeId = Number(
-        currentTempRelative.value.relativeTypeId
-      );
-      activeRelative.telephone = currentTempRelative.value.telephone;
+      // Проверяем есть ли value для совместимости со старым кодом
+      const relativeData = currentTempRelative.value
+        ? currentTempRelative.value
+        : currentTempRelative;
+
+      // Обновляем данные активного родственника
+      activeRelative.name = relativeData.name || "";
+      activeRelative.surname = relativeData.surname || "";
+      activeRelative.patronymic = relativeData.patronymic || "";
+      activeRelative.relativeTypeId = Number(relativeData.relativeTypeId || 1);
+      activeRelative.telephone = relativeData.telephone || "";
+
+      console.log("Родственник успешно обновлен:", activeRelative);
+    } else {
+      console.warn("Не удалось найти активного родственника для обновления", {
+        idOrIndex,
+        relatives,
+        currentRelativeId: currentRelativeId.value,
+        currentTempRelative,
+      });
     }
   };
 
@@ -85,6 +106,17 @@ export const useRelativesStore = defineStore("relatives", () => {
   };
 
   function setRelativeOfEdit(payload) {
+    // Проверяем, не пустой ли payload
+    if (!payload) return;
+
+    // Проверяем, что есть хотя бы одно заполненное поле
+    const hasData =
+      payload.name ||
+      payload.surname ||
+      payload.patronymic ||
+      payload.telephone;
+    if (!hasData) return;
+
     // Если у родственника есть relativeId из БД, используем его
     if (payload.relativeId) {
       relatives.push({

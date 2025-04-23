@@ -2,7 +2,7 @@
 клиента * @module AddGroupRelatives */
 
 <script setup>
-import { reactive, ref, computed, nextTick } from "vue";
+import { reactive, ref, computed, nextTick, onMounted } from "vue";
 import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 import Cleave from "cleave.js";
@@ -65,6 +65,7 @@ const showOneMoreRelative = ref(true);
 const telephoneMask = ref(null);
 const isEditing = ref(true);
 const relativeAddToStoreLoading = ref(false);
+const isInitialized = ref(false); // Флаг для отслеживания инициализации компонента
 
 defineEmits(["close"]);
 
@@ -83,20 +84,29 @@ relativesStore.setRelativesTypes(relativeTypesData.value);
  * @computed
  * @returns {Object} Секции родственников
  */
-const relativeSections = computed(() =>
-  $services.relatives.getRelativesSections(
+const relativeSections = computed(() => {
+  if (!relativesStore.relatives || relativesStore.relatives.length === 0) {
+    return {
+      before: [],
+      active: null,
+      after: [],
+    };
+  }
+
+  return $services.relatives.getRelativesSections(
     relativesStore.relatives,
     relativesStore.currentRelativeId
-  )
-);
+  );
+});
 
 /**
  * @computed
  * @returns {Object} Текущий временный родственник
  */
-const currentTempRelative = computed(() =>
-  getTempRelative(relativesStore.currentRelativeId)
-);
+const currentTempRelative = computed(() => {
+  const result = getTempRelative(relativesStore.currentRelativeId);
+  return result;
+});
 
 /**
  * @computed
@@ -109,6 +119,8 @@ const addRelativeText = computed(() => {
     relativesStore.relatives.length >=
     relativesConstants.MAX_QUANTITY_RELATIVES;
 
+  console.log("relativesStore.relatives )))))))", relativesStore.relatives);
+
   if (checkRelativeLessMax) {
     return "+ Добавить ещё одного родственника";
   } else if (checkRelativeEqualMax) {
@@ -120,12 +132,13 @@ const addRelativeText = computed(() => {
 
 /**
  * Получает временные данные родственника по индексу
- * @param {number} index - Индекс родственника (начиная с 1)
+ * @param {number} indexOrId - Индекс родственника (начиная с 1) или ID
  * @returns {Object} Данные родственника
  */
-const getTempRelative = (index) => {
-  if (!tempRelatives[index]) {
-    tempRelatives[index] = {
+const getTempRelative = (indexOrId) => {
+  // Используем индекс или ID как ключ для tempRelatives
+  if (!tempRelatives[indexOrId]) {
+    tempRelatives[indexOrId] = {
       name: "",
       surname: "",
       patronymic: "",
@@ -133,7 +146,7 @@ const getTempRelative = (index) => {
       telephone: "",
     };
   }
-  return tempRelatives[index];
+  return tempRelatives[indexOrId];
 };
 
 /**
@@ -174,13 +187,28 @@ const toggleEditing = async (value) => {
  * Добавляет нового родственника
  */
 const addOneMoreRelatives = async () => {
+  // Если достигнут предел родственников, не добавляем новых
   if ($services.relatives.isMaxRelativesLimitReached(relativesStore.relatives))
     return;
 
-  const newIndex = relativesStore.addEmpty();
-  relativesStore.currentRelativeId = newIndex;
+  // Удаляем старого активного родственника, если он пустой
+  if (
+    relativeSections.value.active &&
+    checkValuesForValidateReset({ value: relativeSections.value.active })
+  ) {
+    relativesStore.deleteRelative(
+      relativeSections.value.active.id || relativesStore.currentRelativeId
+    );
+  }
 
+  // Форсируем режим редактирования перед добавлением нового родственника
+  isEditing.value = true;
+
+  // Получаем индекс нового родственника (без id)
+  const tempIndex = relativesStore.addEmpty();
+  relativesStore.currentRelativeId = tempIndex;
   showOneMoreRelative.value = true;
+
   resetForm({
     values: {
       name: "",
@@ -190,8 +218,13 @@ const addOneMoreRelatives = async () => {
       telephone: "",
     },
   });
+
+  // Обновляем DOM перед применением маски
   await nextTick();
   addInputMask();
+
+  console.log("Режим редактирования:", isEditing.value);
+  console.log("Индекс активного родственника:", tempIndex);
 };
 
 /**
@@ -201,11 +234,17 @@ const changeEdit = async (index) => {
   relativesStore.currentRelativeId = index;
   toggleEditing(true);
 
-  if (checkValuesForValidateReset(currentTempRelative.value)) {
-    resetForm();
-  } else {
-    validate();
-  }
+  // Обновляем данные формы на основе выбранного родственника
+  const relativeData = getTempRelative(index);
+  resetForm({
+    values: {
+      name: relativeData.name || "",
+      surname: relativeData.surname || "",
+      patronymic: relativeData.patronymic || "",
+      relativeTypeId: relativeData.relativeTypeId || 1,
+      telephone: relativeData.telephone || "",
+    },
+  });
 
   await nextTick();
   addInputMask();
@@ -227,12 +266,15 @@ const showRelativeAddToStoreLoading = () => {
  */
 const addRelativeToStore = async (activeIndex) => {
   try {
+    // Проверка, что у нас есть активный родственник
+    if (!relativeSections.value.active) {
+      console.error("Нет активного родственника для обновления");
+      return;
+    }
+
     const resultValidate = await validate();
     if (resultValidate.valid) {
-      relativesStore.updateActiveRelative(
-        activeIndex,
-        currentTempRelative.value
-      );
+      relativesStore.updateActiveRelative(activeIndex, currentTempRelative);
       showRelativeAddToStoreLoading();
     }
   } catch (error) {
@@ -244,14 +286,61 @@ const addRelativeToStore = async (activeIndex) => {
  * Удаляет родственника
  */
 const deleteRelative = async (index) => {
-  relativesStore.deleteRelative(index);
+  console.log("Удаление родственника с индексом/id:", index);
+  console.log(
+    "Список родственников до удаления:",
+    JSON.stringify(relativesStore.relatives)
+  );
+
+  // Проверяем, существует ли родственник перед удалением
+  const relativeIndex = $services.relatives.findRelativeIndexById(
+    relativesStore.relatives,
+    index
+  );
+
+  if (relativeIndex === -1) {
+    console.error(
+      "Не удалось найти родственника для удаления с индексом/id:",
+      index
+    );
+    return;
+  }
+
+  console.log("Найденный индекс родственника в массиве:", relativeIndex);
+
+  // Удаляем родственника напрямую из массива, минуя хранилище
+  relativesStore.relatives.splice(relativeIndex, 1);
+
+  // Очищаем временные данные
   delete tempRelatives[index];
 
+  console.log(
+    "Список родственников после удаления:",
+    JSON.stringify(relativesStore.relatives)
+  );
+
+  // Если после удаления еще остались родственники
   if (relativesStore.relatives.length > 0) {
-    relativesStore.currentRelativeId = 1;
+    // Устанавливаем текущим родственником первого в списке
+    relativesStore.currentRelativeId = relativesStore.relatives[0].id || 1;
     await nextTick();
-    resetForm({ values: getTempRelative(1) });
-    toggleEditing(true);
+
+    // Обновляем данные формы на основе выбранного родственника
+    const relativeData = getTempRelative(relativesStore.currentRelativeId);
+    resetForm({
+      values: {
+        name: relativeData.name || "",
+        surname: relativeData.surname || "",
+        patronymic: relativeData.patronymic || "",
+        relativeTypeId: relativeData.relativeTypeId || 1,
+        telephone: relativeData.telephone || "",
+      },
+    });
+
+    toggleEditing(false); // Закрываем форму редактирования
+  } else {
+    // Если больше нет родственников, автоматически открываем форму для добавления
+    addOneMoreRelatives();
   }
 };
 
@@ -274,9 +363,19 @@ const setEditRelative = () => {
   if (props.actionType?.type === "edit" && props.actionType.family?.relatives) {
     const relatives = props.actionType.family.relatives;
 
+    // Проверяем, есть ли вообще родственники в массиве
+    if (!relatives || relatives.length === 0) {
+      // Если родственников нет, автоматически открываем форму для добавления
+      addOneMoreRelatives();
+      return;
+    }
+
     Object.keys(tempRelatives).forEach((key) => delete tempRelatives[key]);
 
     relatives.forEach((relative, index) => {
+      // Убедимся, что объект relative не undefined и не null
+      if (!relative) return;
+
       const relativeForStore = {
         name: relative.relativeName || "",
         surname: relative.relativeSurname || "",
@@ -296,13 +395,12 @@ const setEditRelative = () => {
 
     if (relatives.length > 0) {
       relativesStore.currentRelativeId = 1;
-      toggleEditing(true);
-      resetForm({
-        values: {
-          ...tempRelatives[1],
-        },
-      });
+      // Открываем режим редактирования только если нет родственников
+      toggleEditing(false);
     }
+  } else if (props.actionType?.type === "add") {
+    // Если это добавление нового клиента, автоматически открываем форму
+    addOneMoreRelatives();
   }
 };
 
@@ -313,6 +411,7 @@ const close = () => {
   emit("close");
 };
 
+// Отслеживаем изменения в семье клиента
 watch(
   () => props.actionType?.family,
   () => {
@@ -320,9 +419,33 @@ watch(
       setEditRelative();
     } else {
       relativesStore.reset();
+      // Если режим добавления, добавляем форму
+      addOneMoreRelatives();
+    }
+  },
+  { immediate: true } // Запускаем watcher сразу при создании компонента
+);
+
+// Отслеживаем изменения в списке родственников
+watch(
+  () => relativesStore.relatives.length,
+  (newLength) => {
+    // Если список стал пуст и компонент уже инициализирован, открываем форму
+    if (newLength === 0 && isInitialized.value) {
+      addOneMoreRelatives();
     }
   }
 );
+
+// Инициализация компонента
+onMounted(async () => {
+  isInitialized.value = true;
+
+  // На случай, если watcher не сработал, проверяем наличие родственников
+  if (relativesStore.relatives.length === 0) {
+    addOneMoreRelatives();
+  }
+});
 </script>
 
 <template>
@@ -354,8 +477,8 @@ watch(
           </div>
           <div
             class="card-table__table-tr"
-            v-for="item in relativeSections.before"
-            :key="item.id"
+            v-for="(item, index) in relativeSections.before"
+            :key="item.id || 'before-' + (index + 1)"
           >
             <div class="card-table__table-td card-table--name">
               {{ item.name }}
@@ -369,7 +492,11 @@ watch(
                 <img
                   class="card-table__actions--edit"
                   src="/icons/edit.svg"
-                  @click="changeEdit(item.id)"
+                  @click="
+                    changeEdit(
+                      item.id || relativeSections.before.indexOf(item) + 1
+                    )
+                  "
                   alt=""
                 />
               </div>
@@ -393,7 +520,12 @@ watch(
                   <img
                     class="card-table__actions--edit"
                     src="/icons/edit.svg"
-                    @click="changeEdit(relativeSections.active.id)"
+                    @click="
+                      changeEdit(
+                        relativeSections.active.id ||
+                          relativesStore.currentRelativeId
+                      )
+                    "
                     alt=""
                   />
                 </div>
@@ -429,7 +561,12 @@ watch(
                   src="/icons/ok_icon.svg"
                   alt=""
                   class="card-table__actions-img"
-                  @click="addRelativeToStore(relativeSections.active.id)"
+                  @click="
+                    addRelativeToStore(
+                      relativeSections.active.id ||
+                        relativesStore.currentRelativeId
+                    )
+                  "
                 />
               </div>
               <div class="card-table__field">
@@ -508,7 +645,12 @@ watch(
               </div>
               <div
                 class="card-table__delete"
-                @click="deleteRelative(relativeSections.active.id)"
+                @click="
+                  deleteRelative(
+                    relativeSections.active.id ||
+                      relativesStore.currentRelativeId
+                  )
+                "
               >
                 <div class="card-table__delete-text">Удалить</div>
                 <img
@@ -517,13 +659,15 @@ watch(
                   class="card-table__delete-img"
                 />
               </div>
-              {{ relativeSections.active.id }}
+              {{
+                relativeSections.active.id || relativesStore.currentRelativeId
+              }}
             </div>
           </div>
           <div
             class="card-table__table-tr"
-            v-for="item in relativeSections.after"
-            :key="item.id"
+            v-for="(item, index) in relativeSections.after"
+            :key="item.id || 'after-' + (index + 1)"
           >
             <div class="card-table__table-td card-table--name">
               {{ item.name }}
@@ -537,7 +681,11 @@ watch(
                 <img
                   class="card-table__actions--edit"
                   src="/icons/edit.svg"
-                  @click="changeEdit(item.id)"
+                  @click="
+                    changeEdit(
+                      item.id || relativeSections.before.length + 1 + index + 1
+                    )
+                  "
                   alt=""
                 />
               </div>
