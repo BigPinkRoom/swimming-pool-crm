@@ -652,40 +652,50 @@ const setEditRelative = () => {
     if (relatives.length > 0) {
       // Устанавливаем текущий ID первого родственника
       const firstRelative = relativesStore.relatives[0];
-      relativesStore.currentRelativeId = firstRelative.id || 1;
+      if (firstRelative) {
+        relativesStore.currentRelativeId = firstRelative.id || 1;
 
-      console.log(
-        `Установлен текущий ID родственника: ${relativesStore.currentRelativeId}`
-      );
-      console.log(`Данные первого родственника:`, firstRelative);
+        console.log(
+          `Установлен текущий ID родственника: ${relativesStore.currentRelativeId}`
+        );
+        console.log(`Данные первого родственника:`, firstRelative);
 
-      // Обновляем временный кэш для текущего ID
-      if (!tempRelatives[relativesStore.currentRelativeId]) {
-        tempRelatives[relativesStore.currentRelativeId] = { ...firstRelative };
+        // Обновляем временный кэш для текущего ID
+        if (!tempRelatives[relativesStore.currentRelativeId]) {
+          tempRelatives[relativesStore.currentRelativeId] = {
+            ...firstRelative,
+          };
+        }
+
+        // Скрываем режим редактирования только если есть родственники
+        toggleEditing(false);
+
+        // Получаем данные из временного кэша для текущего родственника
+        const currentRelativeData = getTempRelative(
+          relativesStore.currentRelativeId
+        );
+        console.log(
+          `Данные для формы текущего родственника:`,
+          currentRelativeData
+        );
+
+        // Сбрасываем форму с данными текущего родственника
+        resetForm({
+          values: {
+            name: currentRelativeData.name || "",
+            surname: currentRelativeData.surname || "",
+            patronymic: currentRelativeData.patronymic || "",
+            relativeTypeId: currentRelativeData.relativeTypeId || 1,
+            telephone: currentRelativeData.telephone || "",
+          },
+        });
+      } else {
+        // Если по какой-то причине первый родственник отсутствует, добавляем нового
+        console.warn(
+          "Первый родственник не найден после добавления в хранилище"
+        );
+        addOneMoreRelatives();
       }
-
-      // Скрываем режим редактирования только если есть родственники
-      toggleEditing(false);
-
-      // Получаем данные из временного кэша для текущего родственника
-      const currentRelativeData = getTempRelative(
-        relativesStore.currentRelativeId
-      );
-      console.log(
-        `Данные для формы текущего родственника:`,
-        currentRelativeData
-      );
-
-      // Сбрасываем форму с данными текущего родственника
-      resetForm({
-        values: {
-          name: currentRelativeData.name || "",
-          surname: currentRelativeData.surname || "",
-          patronymic: currentRelativeData.patronymic || "",
-          relativeTypeId: currentRelativeData.relativeTypeId || 1,
-          telephone: currentRelativeData.telephone || "",
-        },
-      });
     }
   } else if (props.actionType?.type === "add") {
     console.log("Режим добавления нового клиента, открываем форму");
@@ -706,7 +716,15 @@ watch(
   () => props.actionType?.family,
   () => {
     if (props.actionType?.type === "edit") {
-      setEditRelative();
+      // Вызываем setEditRelative только если actionType определен
+      try {
+        setEditRelative();
+      } catch (error) {
+        console.error("Ошибка при редактировании родственников:", error);
+        // В случае ошибки сбрасываем хранилище и добавляем нового родственника
+        relativesStore.reset();
+        addOneMoreRelatives();
+      }
     } else {
       relativesStore.reset();
 
@@ -807,9 +825,16 @@ onMounted(async () => {
       isEditing.value = true;
     } else {
       // Иначе выбираем первого родственника
-      relativesStore.currentRelativeId = relativesStore.relatives[0].id || 1;
-      resetForm({ values: getTempRelative(relativesStore.currentRelativeId) });
-      isEditing.value = false;
+      if (relativesStore.relatives.length > 0 && relativesStore.relatives[0]) {
+        relativesStore.currentRelativeId = relativesStore.relatives[0].id || 1;
+        resetForm({
+          values: getTempRelative(relativesStore.currentRelativeId),
+        });
+        isEditing.value = false;
+      } else {
+        // Если список родственников пуст или первый родственник недоступен
+        addOneMoreRelatives();
+      }
     }
   }
 
@@ -825,7 +850,7 @@ onMounted(async () => {
     <CardTable class="card-table__wrapper--gray">
       <template #title>
         <legend class="card-table__title card-table__title--gray">
-          {{ $t(`forms.client.${actionType.type}.fieldsets.relatives.label`) }}
+          {{ $t("forms.client.edit.fieldsets.relatives.label") }}
         </legend>
       </template>
       <template #content>
@@ -947,7 +972,7 @@ onMounted(async () => {
                   type="text"
                   :title="
                     $t(
-                      `forms.client.add.fieldsets.relatives.fields.surname.label`
+                      'forms.client.add.fieldsets.relatives.fields.surname.label'
                     )
                   "
                   name="surname"
@@ -961,7 +986,7 @@ onMounted(async () => {
                   :id="`relativeName_${uuidV4}`"
                   type="text"
                   :title="
-                    $t(`forms.client.add.fieldsets.relatives.fields.name.label`)
+                    $t('forms.client.add.fieldsets.relatives.fields.name.label')
                   "
                   name="name"
                   :success-message="$t('zod.success')"
@@ -975,7 +1000,7 @@ onMounted(async () => {
                   type="text"
                   :title="
                     $t(
-                      `forms.client.add.fieldsets.relatives.fields.patronymic.label`
+                      'forms.client.add.fieldsets.relatives.fields.patronymic.label'
                     )
                   "
                   name="patronymic"
@@ -989,7 +1014,7 @@ onMounted(async () => {
                   :id="`relativeType_${uuidV4}`"
                   type="text"
                   :title="
-                    $t(`forms.client.add.fieldsets.relatives.fields.type.label`)
+                    $t('forms.client.add.fieldsets.relatives.fields.type.label')
                   "
                   name="type"
                   :options-list="relativesStore.relativesTypes"
@@ -1004,7 +1029,7 @@ onMounted(async () => {
                   type="text"
                   :title="
                     $t(
-                      `forms.client.add.fieldsets.relatives.fields.telephone.label`
+                      'forms.client.add.fieldsets.relatives.fields.telephone.label'
                     )
                   "
                   name="telephone"
