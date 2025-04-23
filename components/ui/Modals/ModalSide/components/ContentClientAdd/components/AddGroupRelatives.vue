@@ -191,6 +191,21 @@ const addOneMoreRelatives = async () => {
   if ($services.relatives.isMaxRelativesLimitReached(relativesStore.relatives))
     return;
 
+  // Если есть активный родственник, сначала проверяем валидацию
+  if (relativeSections.value.active && isEditing.value) {
+    const validationResult = await validate();
+    if (!validationResult.valid) {
+      // Если валидация не прошла, останавливаем добавление нового родственника
+      return;
+    }
+
+    // Если валидация успешна, сохраняем текущего родственника
+    relativesStore.updateActiveRelative(
+      relativeSections.value.active.id || relativesStore.currentRelativeId,
+      currentTempRelative
+    );
+  }
+
   // Удаляем старого активного родственника, если он пустой
   if (
     relativeSections.value.active &&

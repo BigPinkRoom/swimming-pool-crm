@@ -75,6 +75,7 @@ const showOneMoreClient = ref(true);
 const birthdayDate = ref(null);
 const isEditing = ref(true);
 const clientAddToStoreLoading = ref(false);
+const isClientFormOpen = ref(false);
 
 defineEmits(["close"]);
 
@@ -215,20 +216,182 @@ const getTempClient = (index) => {
  * @param {number} index - Индекс клиента (начиная с 1)
  */
 const changeEdit = async (index) => {
+  // Сохраняем данные текущего клиента перед переключением
+  if (isEditing.value) {
+    const currentClientData = { ...currentTempClient.value };
+    clientsStore.updateActiveClient(
+      clientsStore.currentClientId,
+      currentClientData
+    );
+
+    // Сохраняем данные также в tempClients
+    tempClients[clientsStore.currentClientId] = { ...currentClientData };
+  }
+
+  // Переключаемся на нового клиента
   clientsStore.currentClientId = index;
+
+  // Загружаем данные нового клиента
+  const clientData = clientsStore.clients[index - 1];
+
+  // Убедимся, что данные в tempClients актуальны
+  if (clientData) {
+    tempClients[index] = { ...clientData };
+  }
+
+  // Загружаем данные в форму
+  resetForm({ values: getTempClient(index) });
 
   // Всегда включаем режим редактирования при нажатии на кнопку редактирования
   isEditing.value = true;
 
-  // Первым получаем currentTempClient после установки clientsStore.currentClientId
-  const tempClient = currentTempClient;
+  await nextTick();
+  addInputMask();
+};
 
-  if (checkValuesForValidateReset(tempClient)) {
-    resetForm();
-  } else {
-    validate();
+/**
+ * Добавляет нового клиента
+ */
+const handleAddClientButtonClick = async () => {
+  // Проверяем, находимся ли мы в режиме редактирования
+  if (isEditing.value) {
+    // Определяем, редактируем мы существующего клиента или нового
+    const isExistingClient =
+      clientsStore.clients[clientsStore.currentClientId - 1]?.id;
+
+    if (isExistingClient) {
+      // Если редактируем существующего клиента, сохраняем изменения
+      const currentClientData = { ...currentTempClient.value };
+      clientsStore.updateActiveClient(
+        clientsStore.currentClientId,
+        currentClientData
+      );
+      tempClients[clientsStore.currentClientId] = { ...currentClientData };
+
+      // Скрываем режим редактирования
+      isEditing.value = false;
+
+      // Проверяем, есть ли уже новый несохраненный клиент
+      const hasNewUnsavedClient = clientsStore.clients.some(
+        (client) => !client.id
+      );
+
+      // Если уже есть новый несохраненный клиент, не создаем еще один
+      if (hasNewUnsavedClient) {
+        // Находим индекс нового клиента
+        const newClientIndex =
+          clientsStore.clients.findIndex((client) => !client.id) + 1;
+        // Переключаемся на него
+        clientsStore.currentClientId = newClientIndex;
+        resetForm({ values: getTempClient(newClientIndex) });
+        isEditing.value = true;
+        await nextTick();
+        addInputMask();
+        return;
+      }
+
+      // Если нет нового клиента, создаем его
+      const newIndex = clientsStore.addEmpty();
+      clientsStore.currentClientId = newIndex;
+      showOneMoreClient.value = true;
+
+      resetForm({
+        values: {
+          name: "",
+          surname: "",
+          patronymic: "",
+          birthday: "",
+          gender: 0,
+        },
+      });
+
+      // Устанавливаем режим редактирования для нового клиента
+      isEditing.value = true;
+
+      // Помечаем клиента как редактируемый в tempClients
+      tempClients[newIndex] = {
+        name: "",
+        surname: "",
+        patronymic: "",
+        birthday: "",
+        gender: 0,
+        isEditing: true,
+      };
+
+      // После рендеринга добавляем маску ввода
+      await nextTick();
+      addInputMask();
+      return;
+    }
+
+    // Если редактируем нового клиента, выполняем валидацию
+    const resultValidate = await validate();
+    if (resultValidate.valid) {
+      // Сохраняем текущего клиента, если валидация прошла успешно
+      const currentClientData = { ...currentTempClient.value };
+      clientsStore.updateActiveClient(
+        clientsStore.currentClientId,
+        currentClientData
+      );
+      tempClients[clientsStore.currentClientId] = { ...currentClientData };
+
+      // Скрываем режим редактирования после сохранения
+      isEditing.value = false;
+    }
+    return;
   }
 
+  // Проверяем, есть ли уже новый несохраненный клиент
+  const hasNewUnsavedClient = clientsStore.clients.some((client) => !client.id);
+
+  // Если уже есть новый несохраненный клиент, не создаем еще один
+  if (hasNewUnsavedClient) {
+    // Находим индекс нового клиента
+    const newClientIndex =
+      clientsStore.clients.findIndex((client) => !client.id) + 1;
+    // Переключаемся на него
+    clientsStore.currentClientId = newClientIndex;
+    resetForm({ values: getTempClient(newClientIndex) });
+    isEditing.value = true;
+    await nextTick();
+    addInputMask();
+    return;
+  }
+
+  // Если не в режиме редактирования и нет нового клиента, проверяем возможность создания нового клиента
+  if ($services.clients.isMaxClientsLimitReached(clientsStore.clients)) {
+    return;
+  }
+
+  // Создаем нового клиента
+  const newIndex = clientsStore.addEmpty();
+  clientsStore.currentClientId = newIndex;
+  showOneMoreClient.value = true;
+
+  resetForm({
+    values: {
+      name: "",
+      surname: "",
+      patronymic: "",
+      birthday: "",
+      gender: 0,
+    },
+  });
+
+  // Устанавливаем режим редактирования для нового клиента
+  isEditing.value = true;
+
+  // Помечаем клиента как редактируемый в tempClients
+  tempClients[newIndex] = {
+    name: "",
+    surname: "",
+    patronymic: "",
+    birthday: "",
+    gender: 0,
+    isEditing: true,
+  };
+
+  // После рендеринга добавляем маску ввода
   await nextTick();
   addInputMask();
 };
@@ -256,10 +419,8 @@ const addOneMoreClients = async () => {
   await nextTick();
   addInputMask();
 
-  // Если это первый клиент (список был пуст), то показываем форму редактирования
-  // В противном случае (если клиенты уже есть) - скрываем форму
-  const isFirstClient = clientsStore.clients.length === 1;
-  isEditing.value = isFirstClient;
+  // Устанавливаем режим редактирования для нового клиента
+  isEditing.value = true;
 };
 
 /**
@@ -590,7 +751,7 @@ watch(
             <div class="card-table__add">
               <button
                 class="card-table__button card-table__button--add"
-                @click.prevent="addOneMoreClients"
+                @click.prevent="handleAddClientButtonClick"
                 :disabled="
                   $services.clients.isMaxClientsLimitReached(
                     clientsStore.clients
