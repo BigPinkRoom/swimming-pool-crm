@@ -1,0 +1,27 @@
+name: Build and Push Frontend (Swimming-pool-crm) Docker Image
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Клонирование репозитория
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. Логин в Docker Hub (если используется)
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      # 3. Сборка Docker-образа
+      - name: Build Docker image
+        run: docker build -t repertuar/frontend-app::latest .
+
+      # 4. Публикация Docker-образа в Docker Hub (опционально)
+      - name: Push Docker image
+        run: docker push repertuar/frontend-app::latest
