@@ -20,8 +20,8 @@ jobs:
 
       # 3. Сборка Docker-образа
       - name: Build Docker image
-        run: docker build -t repertuar/frontend-app::latest .
+        run: docker build -t repertuar/frontend-app:latest .
 
       # 4. Публикация Docker-образа в Docker Hub (опционально)
       - name: Push Docker image
-        run: docker push repertuar/frontend-app::latest
+        run: docker push repertuar/frontend-app:latest
