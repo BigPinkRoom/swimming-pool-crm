@@ -5,6 +5,7 @@ import Menus from "./modules/menus";
 import Abonements from "./modules/abonements";
 import Clients from "./modules/clients";
 import Relatives from "./modules/relatives";
+import Families from "./modules/families";
 
 export default class Services {
   constructor(app) {
@@ -19,5 +20,6 @@ export default class Services {
 
     this.clients = new Clients(app);
     this.relatives = new Relatives(app);
+    this.families = new Families(app);
   }
 }

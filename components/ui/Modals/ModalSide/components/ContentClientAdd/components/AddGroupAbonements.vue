@@ -37,8 +37,8 @@ const { errors, values, meta, validate, resetForm } = useForm({
 });
 
 const inputData = reactive([
-  { id: 0, value: 0, label: "Новый" },
-  { id: 1, value: 1, label: "Существующий" },
+  { id: 0, value: 0, label: "Добавить новый" },
+  { id: 1, value: 1, label: "Изменить существующий" },
 ]);
 
 const toggleAbonementType = ref(0);
@@ -61,6 +61,11 @@ const uuidV4 = uuid.v4();
 const clientAddToStoreLoading = ref(false);
 
 watch(tempAbonement, () => {
+  abonementsStore.setFilledObject(tempAbonement);
+});
+
+onUnmounted(() => {
+  resetTempAbonement();
   abonementsStore.setFilledObject(tempAbonement);
 });
 </script>
@@ -183,9 +188,18 @@ watch(tempAbonement, () => {
                     "
                     name="selectedActiveAbonement"
                     :options-list="[
-                      { text: '1001', value: 1001 },
-                      { text: '1015', value: 1015 },
-                      { text: '985', value: 985 },
+                      {
+                        text: '№ 1001 - (5/10 занятий) До 01.01.2026',
+                        value: 1001,
+                      },
+                      {
+                        text: '№ 1015 - (10/15 занятий) До 01.01.2026',
+                        value: 1015,
+                      },
+                      {
+                        text: '№ 985 - (5/10 занятий) До 01.01.2026',
+                        value: 985,
+                      },
                     ]"
                     :success-message="$t('zod.success')"
                     :errorSubmit="errors.selectedActiveAbonement"

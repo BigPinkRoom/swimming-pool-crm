@@ -32,6 +32,10 @@ const props = defineProps({
   placeholderProp: {
     type: String,
   },
+  defaultClass: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(["update:modelValue"]);
@@ -41,16 +45,19 @@ const { value, errorMessage, meta } = useField(props.name || "", undefined, {
 });
 
 const fieldClass = computed(() => ({
+  "field__input--default": Boolean(props.defaultClass),
   "field__input--error": Boolean(errorMessage.value || props.errorSubmit),
   "field__input--success": Boolean(meta.valid),
 }));
 
 const titleClass = computed(() => ({
+  "field__title--default": Boolean(props.defaultClass),
   "field__title--error": Boolean(errorMessage.value || props.errorSubmit),
   "field__title--success": Boolean(meta.valid),
 }));
 
 const subtitleClass = computed(() => ({
+  "field__subtitle--default": Boolean(props.defaultClass),
   "field__subtitle--error": Boolean(errorMessage.value || props.errorSubmit),
   "field__subtitle--success": Boolean(meta.valid),
 }));
@@ -110,6 +117,10 @@ const subtitleClass = computed(() => ({
     &--success {
       color: var(--color-main);
     }
+
+    &--default {
+      color: var(--color-main-tertiary-light);
+    }
   }
 
   &__input {
@@ -147,6 +158,11 @@ const subtitleClass = computed(() => ({
         box-shadow: 0rem 0rem 0rem 0.2rem var(--color-main);
       }
     }
+
+    &--default {
+      background-color: var(--color-white);
+      border: 0.1rem solid var(--color-main-tertiary-light-2);
+    }
   }
 
   &__subtitle {
@@ -162,6 +178,10 @@ const subtitleClass = computed(() => ({
 
     &--success {
       color: var(--color-main);
+    }
+
+    &--default {
+      color: var(--color-main-tertiary-light);
     }
 
     &--empty {

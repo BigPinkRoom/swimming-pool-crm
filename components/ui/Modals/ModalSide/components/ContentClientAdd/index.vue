@@ -1,5 +1,6 @@
 <script setup>
 import vCheckbox from "@/components/ui/Checkboxes/MainCheckbox";
+import FieldsetSearch from "./components/Search.vue";
 import FieldsetClientAdd from "./components/AddGroupClient";
 import FieldsetAbonements from "./components/AddGroupAbonements";
 import FieldsetRelatives from "./components/AddGroupRelatives";
@@ -28,6 +29,10 @@ const checkboxAbonementHandler = (value) => {
 
 <template>
   <form class="client-main" ref="formRef">
+    <div class="client-main__item">
+      <fieldset-search :action-type="actionType" />
+    </div>
+
     <div class="client-main__item">
       <fieldset-client-add :action-type="actionType" />
     </div>
