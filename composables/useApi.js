@@ -5,6 +5,8 @@ export async function useApi(urlPath, method, params) {
   const config = useRuntimeConfig();
   const baseUrlValue = config.public.baseUrl;
 
+  console.log("base url value", baseUrlValue);
+
   const { $showMessage, $showError } = useNuxtApp();
 
   const headers = useRequestHeaders(["cookie"]);

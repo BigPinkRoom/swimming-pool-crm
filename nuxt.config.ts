@@ -56,7 +56,7 @@ export default defineNuxtConfig({
   },
 
   i18n: {
-    baseUrl: "http://localhost:3000",
+    baseUrl: "http://frontend:3000",
     vueI18n: "../configs/i18n.config.ts",
     strategy: "prefix",
     defaultLocale: "ru",
