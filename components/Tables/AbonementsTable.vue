@@ -82,7 +82,7 @@ const openModalAdd = () => {
   emit("openModal", { type: "add" });
 };
 
-onMounted(() => {
+onMounted(async () => {
   // Вызываем синхронизацию после монтирования
   syncRowHeights();
 
@@ -104,6 +104,8 @@ onMounted(() => {
     window.removeEventListener("resize", syncRowHeights);
     observer.disconnect();
   });
+  const response = await $services.abonements.getFullAbonements();
+  console.log("response", response);
 });
 </script>
 
