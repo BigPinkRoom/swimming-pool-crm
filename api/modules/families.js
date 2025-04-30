@@ -5,7 +5,7 @@ export default class Families {
 
   async search(params) {
     try {
-      const response = await useApi("clients/search-family", "POST", params);
+      const response = await useApi("search/search-family", "POST", params);
 
       return response;
     } catch (error) {

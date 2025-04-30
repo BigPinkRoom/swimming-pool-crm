@@ -59,12 +59,6 @@ const sendFamily = async () => {
     abonements: abonementsStore.abonements,
   });
 
-  console.log("relatives", familyModelRequest.relatives);
-  console.log(
-    "relatives filter filled objects",
-    filterFilledObjects(familyModelRequest.relatives)
-  );
-
   const family = createAddFamilyFormData({
     clients: prepareData(filterFilledObjects(familyModelRequest.clients)),
     relatives: prepareData(filterFilledObjects(familyModelRequest.relatives)),

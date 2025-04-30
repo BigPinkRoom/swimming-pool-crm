@@ -12,9 +12,9 @@ export default class Families {
     try {
       const params = {};
 
-      if (!sortings.length) {
-        params.sortings = [{ name: "branch_id", type: "ASC" }];
-      }
+      // if (!sortings.length) {
+      //   params.sortings = [{ name: "branch_id", type: "ASC" }];
+      // }
 
       if (searchString) {
         params.searchString = searchString;

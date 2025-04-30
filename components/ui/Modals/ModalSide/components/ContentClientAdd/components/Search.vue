@@ -6,6 +6,8 @@ const { $i18n } = useNuxtApp();
 const t = $i18n.t;
 const { $services } = useNuxtApp();
 
+const relativesStore = useRelativesStore();
+
 const validationSchema = toTypedSchema(searchValidationSchema(t));
 
 const { errors, values, meta, validate, resetForm } = useForm({
@@ -23,6 +25,25 @@ const getSearch = async (searchString) => {
   return resultSearch;
 };
 
+const getRelativeType = (relativeTypeId) => {
+  const relativesType = relativesStore.relativesTypes.find((item) => {
+    return Number(item.value) === Number(relativeTypeId);
+  });
+  return relativesType.text;
+};
+
+const getGender = (genderId) => {
+  const foundGender = gender.find((item) => {
+    return Number(item.value) === Number(genderId);
+  });
+  return foundGender.label;
+};
+
+const gender = reactive([
+  { id: 0, value: 0, label: "Сын" },
+  { id: 1, value: 1, label: "Дочка" },
+]);
+
 const searchFamily = async () => {
   const resultValidate = await validate();
   if (resultValidate.valid) {
@@ -37,7 +58,9 @@ const searchFamily = async () => {
   <fieldset class="client-main__fieldset">
     <card-table class="card-table__wrapper--gray">
       <template #title>
-        <legend class="card-table__title card-table__title--gray">Поиск</legend>
+        <legend class="card-table__title card-table__title--gray">
+          Поиск добавленной семьи
+        </legend>
       </template>
       <template #content>
         <div class="card-table__table-td card-table__table-td--edit">
@@ -56,7 +79,38 @@ const searchFamily = async () => {
             </div>
           </div>
         </div>
-        {{ searchResult }}
+        <div class="card-table__table-td card-table__table-td--edit">
+          <div
+            class="card-table__table-block"
+            v-for="item in searchResult"
+            :key="item.id"
+          >
+            <div
+              class="card-table__table-block-title"
+              v-for="element in item.relatives"
+              :key="element.id"
+            >
+              <span class="card-table__table-block--semi-bold"
+                >{{ getRelativeType(element.relative_type_id) }}:</span
+              >
+              {{ element.name }} {{ element.surname }} {{ element.patronymic }}
+              <br />
+              <span class="card-table__table-block--semi-bold"
+                >Телефон: {{ element.telephone }}</span
+              >
+            </div>
+            <div
+              class="card-table__table-block-title"
+              v-for="element in item.clients"
+              :key="element.id"
+            >
+              <span class="card-table__table-block--semi-bold"
+                >{{ getGender(element.gender) }}:</span
+              >
+              {{ element.name }} {{ element.surname }} {{ element.patronymic }}
+            </div>
+          </div>
+        </div>
       </template>
       <template #footer>
         <div class="client-main__close" v-if="closeButton">
@@ -224,6 +278,45 @@ const searchFamily = async () => {
 
       :disabled {
       }
+    }
+  }
+
+  &__table-block {
+    width: 100%;
+    margin: 0 0 10px 0;
+    padding: 1rem;
+
+    font-size: 1.4rem;
+
+    border: 1px solid var(--color-main-tertiary-lighter);
+    border-left: 6px solid var(--color-main-tertiary-lighter);
+    border-radius: 5px;
+
+    cursor: pointer;
+    transition: all 0.6s ease;
+
+    &:hover {
+      background-color: var(--color-main-tertiary-lightest);
+      border-left: 6px solid var(--color-main-tertiary-light-2);
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    &-title {
+      margin: 0 0 10px 0;
+
+      font-size: 1.4rem;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    &--semi-bold {
+      font-size: 1.4rem;
+      font-weight: 500;
     }
   }
 }
