@@ -3,16 +3,16 @@ export default defineNuxtConfig({
   compatibilityDate: "2024-11-01",
   devtools: { enabled: true },
 
-  app: {
-    // baseURL: process.env.NUXT_PUBLIC_API_BASE,
-  },
-
   runtimeConfig: {
-    public: {
-      baseUrl: process.env.BASE_URL,
-    },
+    // Приватные переменные (только сервер)
+    basePrivateUrl: "", // Будет переопределено из NUXT_BASE_PRIVATE_URL
     session: {
       name: "id",
+    },
+
+    // Публичные переменные (клиент + сервер)
+    public: {
+      baseUrl: process.env.NUXT_PUBLIC_BASE_URL || "/",
     },
   },
 
