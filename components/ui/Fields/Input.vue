@@ -166,8 +166,7 @@ const subtitleClass = computed(() => ({
   }
 
   &__subtitle {
-    display: block; // Явно указываем блочный тип
-    width: 100%;
+    display: flex;
     margin-top: 0.3rem;
 
     font-size: 1.1rem;
