@@ -1,5 +1,6 @@
 import { transformKeysToSnakeCase } from "~/helpers/CamelToSnakeCase";
 import { transformKeysToCamelCase } from "~/helpers/snakeToCamelCase";
+import { removeSpaces } from "~/helpers/removeSpaces";
 
 export default class AbonementEntity {
   constructor({ context } = {}) {
@@ -7,6 +8,8 @@ export default class AbonementEntity {
   }
 
   createFamilyModelRequest({ clients, relatives, abonements }) {
+    const telephonesWithoutSpaces = removeSpaces(relatives);
+
     return {
       clients: transformKeysToSnakeCase(clients),
       relatives: transformKeysToSnakeCase(relatives),
