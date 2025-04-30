@@ -3,9 +3,10 @@ export async function useApi(urlPath, method, params) {
   const t = $i18n.t;
 
   const config = useRuntimeConfig();
-  const baseUrlValue = config.public.baseUrl;
 
-  console.log("base url value", `${baseUrlValue}${urlPath}`);
+  const baseUrlValue = import.meta.client
+    ? config.public.baseUrl
+    : config.basePrivateUrl;
 
   const { $showMessage, $showError } = useNuxtApp();
 
@@ -18,8 +19,6 @@ export async function useApi(urlPath, method, params) {
       body: params,
       headers,
     });
-
-    console.log("data, error", data, error);
 
     if (error.value) {
       throw error.value;
