@@ -64,7 +64,6 @@ const tempRelatives = reactive({});
 const showOneMoreRelative = ref(true);
 const telephoneMask = ref(null);
 const isEditing = ref(true);
-const relativeAddToStoreLoading = ref(false);
 const isInitialized = ref(false); // Флаг для отслеживания инициализации компонента
 
 defineEmits(["close"]);
@@ -303,14 +302,6 @@ const addOneMoreRelatives = async () => {
     (relative) => relative.id === relativesStore.currentRelativeId
   );
 
-  console.log(
-    "isEditingExistingRelative.value 0--------------------------------------------",
-    isEditingExistingRelative.value
-  );
-
-  if (isEditingExistingRelative.value) {
-  }
-
   // Устанавливаем новый относительный индекс
   const tempIndex = relativesStore.relatives.length;
   console.log("Создан новый родственник с индексом:", tempIndex);
@@ -395,60 +386,39 @@ const changeEdit = async (index) => {
   addInputMask();
 };
 
-/**
- * Показывает индикатор загрузки при добавлении родственника
- */
-const showRelativeAddToStoreLoading = () => {
-  relativeAddToStoreLoading.value = true;
-  setTimeout(() => {
-    relativeAddToStoreLoading.value = false;
+function setFormToUnsavedRelative(index, relative) {
+  relativesStore.currentRelativeId = index + 1;
+  resetForm({
+    values: {
+      name: relative.name || "",
+      surname: relative.surname || "",
+      patronymic: relative.patronymic || "",
+      relativeTypeId: relative.relativeTypeId || 1,
+      telephone: relative.telephone || "",
+    },
+  });
+  isEditing.value = true;
+  nextTick().then(addInputMask);
+}
 
-    // Проверяем наличие несохраненного родственника (без id)
-    const unsavedRelative = relativesStore.relatives.find(
-      (relative) => !relative.id
-    );
+function handleUnsavedRelative() {
+  const unsavedRelativeIndex = relativesStore.relatives.findIndex(
+    (relative) => !relative.id
+  );
+  const unsavedRelative = relativesStore.relatives[unsavedRelativeIndex];
 
-    // Если уже есть новый несохраненный родственник, переключаемся на него
-    if (unsavedRelative) {
-      const newRelativeIndex = relativesStore.relatives.findIndex(
-        (relative) => !relative.id
-      );
-
-      // Индекс относительный (начиная с 1)
-      const relativePosition = newRelativeIndex + 1;
-
-      // Переключаемся на этого родственника
-      relativesStore.currentRelativeId = relativePosition;
-
-      // Устанавливаем данные формы
-      resetForm({
-        values: {
-          name: unsavedRelative.name || "",
-          surname: unsavedRelative.surname || "",
-          patronymic: unsavedRelative.patronymic || "",
-          relativeTypeId: unsavedRelative.relativeTypeId || 1,
-          telephone: unsavedRelative.telephone || "",
-        },
-      });
-
-      // Активируем режим редактирования
-      isEditing.value = true;
-      nextTick().then(() => {
-        addInputMask();
-      });
-    } else {
-      // Если нет несохраненного родственника, добавляем нового
-      addOneMoreRelatives();
-    }
-  }, 1000);
-};
+  if (unsavedRelative) {
+    setFormToUnsavedRelative(unsavedRelativeIndex, unsavedRelative);
+  } else {
+    addOneMoreRelatives();
+  }
+}
 
 /**
  * Добавляет родственника в хранилище
  */
 const addRelativeToStore = async (activeIndex) => {
   try {
-    // Проверка, что у нас есть активный родственник
     if (!relativeSections.value.active) {
       console.error("Нет активного родственника для обновления");
       return;
@@ -458,43 +428,40 @@ const addRelativeToStore = async (activeIndex) => {
     if (resultValidate.valid) {
       relativesStore.updateActiveRelative(activeIndex, currentTempRelative);
 
-      // Проверяем наличие несохраненного родственника (без id)
-      // Исключаем текущего родственника из проверки
-      const unsavedRelative = relativesStore.relatives.find(
-        (relative, index) => !relative.id && index + 1 !== activeIndex
-      );
+      // Проверяем лимит
+      if (
+        !$services.relatives.isMaxRelativesLimitReached(
+          relativesStore.relatives
+        )
+      ) {
+        // Добавляем нового родственника и переключаемся на него
+        const newRelative = {
+          name: "",
+          surname: "",
+          patronymic: "",
+          relativeTypeId: 1,
+          telephone: "",
+        };
+        relativesStore.relatives.push(newRelative);
+        const newIndex = relativesStore.relatives.length;
+        relativesStore.currentRelativeId = newIndex;
 
-      if (unsavedRelative) {
-        // Если уже есть другой несохраненный родственник, переключаемся на него
-        const newRelativeIndex = relativesStore.relatives.findIndex(
-          (relative, index) => !relative.id && index + 1 !== activeIndex
-        );
-
-        // Индекс относительный (начиная с 1)
-        const relativePosition = newRelativeIndex + 1;
-
-        // Переключаемся на этого родственника
-        relativesStore.currentRelativeId = relativePosition;
-
-        // Устанавливаем данные формы
         resetForm({
           values: {
-            name: unsavedRelative.name || "",
-            surname: unsavedRelative.surname || "",
-            patronymic: unsavedRelative.patronymic || "",
-            relativeTypeId: unsavedRelative.relativeTypeId || 1,
-            telephone: unsavedRelative.telephone || "",
+            name: "",
+            surname: "",
+            patronymic: "",
+            relativeTypeId: 1,
+            telephone: "",
           },
         });
 
-        // Активируем режим редактирования
         isEditing.value = true;
         await nextTick();
         addInputMask();
       } else {
-        // Иначе скрываем режим редактирования и создаем анимацию загрузки
+        // Если лимит достигнут — просто закрываем режим редактирования
         isEditing.value = false;
-        showRelativeAddToStoreLoading();
       }
     }
   } catch (error) {
@@ -933,14 +900,6 @@ onMounted(async () => {
               class="card-table__table-td card-table__table-td--edit"
               colspan="4"
             >
-              <svg
-                v-if="relativeAddToStoreLoading"
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-              >
-                <!-- Путь, описывающий периметр -->
-                <path d="M 0 0 H 100 V 100 H 0 V 0 Z" />
-              </svg>
               <div class="card-table__name-title">
                 {{ relativeSections.active.name }}
                 <div class="card-table__name-title--surname">

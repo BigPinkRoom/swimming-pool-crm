@@ -1,10 +1,12 @@
 <script setup>
 import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
+import { computed } from "vue";
 
 import { uuid } from "vue-uuid";
 
 import { useAbonementsStore } from "@/stores/abonementStore";
+import { formatDate } from "@/helpers/formatDate";
 
 import vRadioButton from "@/components/ui/RadioButtons/mainRadioButton";
 import vCloseButton from "@/components/ui/Buttons/ButtonClose.vue";
@@ -19,7 +21,7 @@ const abonementsStore = useAbonementsStore();
 const validationSchema = toTypedSchema(abonementValidationSchema(t));
 
 const props = defineProps({
-  actionType: { type: String },
+  actionType: { type: String, default: () => [] },
   closeButton: { type: Boolean },
 });
 
@@ -41,32 +43,65 @@ const inputData = reactive([
   { id: 1, value: 1, label: "Изменить существующий" },
 ]);
 
-const toggleAbonementType = ref(0);
+const toggleAbonementType = ref(props.actionType.type === "edit" ? 1 : 0);
+
+// Формируем options-list для select из всех абонементов
+const abonementOptions = computed(() => {
+  return props.actionType?.family?.abonements?.map((abonement) => ({
+    text: `№ ${abonement.abonementId} - (${abonement.visitsLeft ?? "-"} / ${
+      abonement.visitsQuantity ?? "-"
+    } занятий) До ${formatDate(abonement.dateEnd, true) ?? "-"}`,
+    value: abonement.abonementId,
+  }));
+});
 
 const tempAbonement = reactive({
   duration: null,
   quantity: null,
   activationDate: null,
-  selectedActiveAbonement: null,
+  selectedActiveAbonement: abonementOptions.value
+    ? abonementOptions.value[0]?.value
+    : null,
 });
 
 const resetTempAbonement = () => {
   tempAbonement.quantity = null;
   tempAbonement.duration = null;
   tempAbonement.activationDate = null;
-  tempAbonement.selectedActiveAbonement = null;
+  tempAbonement.selectedActiveAbonement = abonementOptions.value
+    ? abonementOptions.value[0]?.value
+    : null;
 };
 
 const uuidV4 = uuid.v4();
 const clientAddToStoreLoading = ref(false);
+// Получаем текущий абонемент (например, первый активный)
+const currentAbonement = computed(
+  () =>
+    abonementsStore.abonements.find((a) => a.statusType === "active") ||
+    abonementsStore.abonements[0] ||
+    null
+);
 
 watch(tempAbonement, () => {
-  abonementsStore.setFilledObject(tempAbonement);
+  abonementsStore.setFilledObject([
+    {
+      quantity: tempAbonement.quantity,
+      duration: tempAbonement.duration,
+      activationDate: tempAbonement.activationDate,
+    },
+  ]);
 });
 
 onUnmounted(() => {
   resetTempAbonement();
-  abonementsStore.setFilledObject(tempAbonement);
+  abonementsStore.setFilledObject([
+    {
+      quantity: tempAbonement.quantity,
+      duration: tempAbonement.duration,
+      activationDate: tempAbonement.activationDate,
+    },
+  ]);
 });
 </script>
 
@@ -166,41 +201,17 @@ onUnmounted(() => {
               </div>
               <div class="card-table__block" v-else>
                 <div
-                  class="card-table__field card-table__field--activation-text"
-                >
-                  Осталось занятий:
-                </div>
-                <div
-                  class="card-table__field card-table__field--activation-text"
-                >
-                  Дата завершения:
-                </div>
-                <div
                   class="card-table__field card-table__field--active-abonements"
                 >
                   <ui-selects-select
                     :id="`abonementSelectedActiveAbonement${uuidV4}`"
-                    type="text"
                     :title="
                       $t(
                         `forms.client.add.fieldsets.abonement.fields.activeAbonements.label`
                       )
                     "
                     name="selectedActiveAbonement"
-                    :options-list="[
-                      {
-                        text: '№ 1001 - (5/10 занятий) До 01.01.2026',
-                        value: 1001,
-                      },
-                      {
-                        text: '№ 1015 - (10/15 занятий) До 01.01.2026',
-                        value: 1015,
-                      },
-                      {
-                        text: '№ 985 - (5/10 занятий) До 01.01.2026',
-                        value: 985,
-                      },
-                    ]"
+                    :options-list="abonementOptions"
                     :success-message="$t('zod.success')"
                     :errorSubmit="errors.selectedActiveAbonement"
                     v-model="tempAbonement.selectedActiveAbonement"

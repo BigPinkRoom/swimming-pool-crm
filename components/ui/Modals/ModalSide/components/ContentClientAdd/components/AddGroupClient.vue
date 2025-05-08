@@ -13,8 +13,7 @@ import { uuid } from "vue-uuid";
 import { useClientsStore } from "@/stores/clientStore";
 import Clients from "@/services/modules/clients";
 
-const clientsService = new Clients();
-const { formatDate } = clientsService;
+import { formatDate } from "@/helpers/formatDate";
 
 import AbonementEntity from "@/entities/abonementEntity";
 
@@ -74,8 +73,6 @@ const uuidV4 = uuid.v4();
 const showOneMoreClient = ref(true);
 const birthdayDate = ref(null);
 const isEditing = ref(true);
-const clientAddToStoreLoading = ref(false);
-const isClientFormOpen = ref(false);
 
 defineEmits(["close"]);
 
@@ -462,23 +459,12 @@ const addClientToStore = async (activeIndex) => {
         toggleEditing(false);
       } else {
         // Иначе показываем индикатор загрузки и добавляем нового клиента
-        showClientAddToStoreLoading();
+        addOneMoreClients();
       }
     }
   } catch (error) {
     throw error;
   }
-};
-
-/**
- * Показывает индикатор загрузки при добавлении клиента
- */
-const showClientAddToStoreLoading = () => {
-  clientAddToStoreLoading.value = true;
-  setTimeout(() => {
-    clientAddToStoreLoading.value = false;
-    addOneMoreClients();
-  }, 1000);
 };
 
 /**
@@ -624,14 +610,6 @@ onMounted(() => {
               class="card-table__table-td card-table__table-td--edit"
               colspan="4"
             >
-              <svg
-                v-if="clientAddToStoreLoading"
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-              >
-                <!-- Путь, описывающий периметр -->
-                <path d="M 0 0 H 100 V 100 H 0 V 0 Z" />
-              </svg>
               <div class="card-table__name-title">
                 {{ clientSections.active.name }}
                 <div class="card-table__name-title--surname">
