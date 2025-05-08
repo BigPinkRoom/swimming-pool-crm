@@ -7,6 +7,18 @@ html {
 *::after {
   box-sizing: border-box;
   margin: 0;
-  font-family: 'Open Sans';
+  font-family: "Open Sans";
   font-size: 1.6rem;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+/* Убираем спиннер в Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
 }
