@@ -56,6 +56,7 @@ computed({
 <style lang="scss" scoped>
 .side-modal {
   position: fixed;
+  z-index: 10;
 
   display: flex;
   flex-direction: column;
