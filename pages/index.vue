@@ -143,26 +143,46 @@ const handleFormSubmit = async () => {
 
 <template>
   <div>
-    <ui-modals-modal-side
-      :active="modalSideActive"
-      v-show="modalSideActive"
-      sticky
-      position="left"
-      @close="closeModalSide"
-      :title="$t(`forms.client.${actionType?.type}.title`)"
-    >
-      <template #content>
-        <ContentClientAdd ref="contentClientAddRef" :actionType="actionType"
-      /></template>
-      <template #footer>
-        <FooterMain
-          left-text="Save"
-          right-text="Cancel"
-          @click-left="handleFormSubmit"
-          @click-right="closeModalSide"
-        />
-      </template>
-    </ui-modals-modal-side>
+    <transition name="side-modal-slide-fade">
+      <ui-modals-modal-side
+        :active="modalSideActive"
+        v-if="modalSideActive"
+        sticky
+        position="left"
+        @close="closeModalSide"
+        :title="$t(`forms.client.${actionType?.type}.title`)"
+      >
+        <template #content>
+          <ContentClientAdd ref="contentClientAddRef" :actionType="actionType"
+        /></template>
+        <template #footer>
+          <FooterMain
+            left-text="Save"
+            right-text="Cancel"
+            @click-left="handleFormSubmit"
+            @click-right="closeModalSide"
+          />
+        </template>
+      </ui-modals-modal-side>
+    </transition>
     <TablesAbonementsTable @open-modal="openModalSide" />
   </div>
 </template>
+
+<style lang="scss" scoped>
+.side-modal-slide-fade-enter-active,
+.side-modal-slide-fade-leave-active {
+  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.side-modal-slide-fade-enter-from,
+.side-modal-slide-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-60px);
+}
+.side-modal-slide-fade-enter-to,
+.side-modal-slide-fade-leave-from {
+  opacity: 1;
+  transform: translateX(0);
+}
+</style>
