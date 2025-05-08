@@ -25,7 +25,7 @@ const props = defineProps({
   },
   modelValue: {
     type: [String, Number],
-    default: 1,
+    default: "1",
   },
   placeholder: {
     type: String,
@@ -183,7 +183,7 @@ const uuidV4 = uuid.v4();
   }
 
   &__subtitle {
-    display: block; // Явно указываем блочный тип
+    display: flex;
     width: 100%;
     margin-top: 0.3rem;
 
