@@ -35,3 +35,13 @@ export default class AbonementEntity {
     return processedFullAbonement;
   }
 }
+
+export const abonementFilters = {
+  abonementId: "",
+  dateStart: "",
+  dateEnd: "",
+  visitsQuantity: "",
+  visitsLeft: "",
+  statusId: "",
+  surname: "",
+};
