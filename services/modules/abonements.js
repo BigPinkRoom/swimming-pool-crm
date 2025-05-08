@@ -24,15 +24,21 @@ export default class Abonements {
       const params = {};
 
       if (!sortings.length) {
-        params.sortings = [{ name: "number", type: "ASC" }];
+        params.sortings = [{ name: "clients.name", type: "DESC" }];
+      } else {
+        params.sortings = sortings;
       }
 
       if (isEmpty(filters)) {
-        params.filters = {
-          year: getCurrentDate().currentYear,
-          month: getCurrentDate().currentMonth,
-        };
+        // params.filters = {
+        //   year: getCurrentDate().currentYear,
+        //   month: getCurrentDate().currentMonth,
+        // };
+      } else {
+        params.filters = filters;
       }
+
+      console.log("params", params);
 
       const response = await this.context.$api.abonements.getFull({
         params,
@@ -55,4 +61,29 @@ export default class Abonements {
 
     return response;
   }
+}
+
+export async function handleFilterChange({
+  filters,
+  fullAbonements,
+  createFamilyModelResponse,
+  $services,
+}) {
+  console.log("filters in handleFilterChange", filters);
+  const activeFilters = Object.fromEntries(
+    Object.entries(filters).filter(
+      ([_, value]) => value !== "" && value !== null
+    )
+  );
+
+  const response = await $services.abonements.getFullAbonements({
+    filters: activeFilters,
+  });
+
+  const createResponseModel = createFamilyModelResponse(response);
+  fullAbonements.value.splice(
+    0,
+    fullAbonements.value.length,
+    ...createResponseModel
+  );
 }
