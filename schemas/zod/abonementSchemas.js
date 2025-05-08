@@ -10,7 +10,6 @@ export function abonementValidationSchema(t) {
         /^\d{4}-\d{2}-\d{2}$/,
         "Неверный формат даты (ожидается YYYY-MM-DD)"
       ),
-    selectedActiveAbonement: z.number({ message: t("zod.required") }),
     abonementType: z.string({ message: t("zod.required") }),
   });
 }
