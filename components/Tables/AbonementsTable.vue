@@ -1,24 +1,59 @@
 <script setup>
-import { nextTick } from "vue";
+import { nextTick, computed, ref, onMounted, onUnmounted } from "vue";
 import { statusImagesConstants } from "@/constants/statusImages";
 import AbonementEntity from "@/entities/abonementEntity";
+import { abonementFilters } from "@/entities/abonementEntity";
+import { handleFilterChange } from "@/services/modules/abonements";
 
 const { $services } = useNuxtApp();
 
 const { createFamilyModelResponse } = new AbonementEntity();
+import { formatDate } from "@/helpers/formatDate";
 
 const fullAbonements = ref([]);
+const originalFullAbonements = ref([]);
 
-const { data: fullAbonementsData } = await useAsyncData(
+const { data: fullAbonementsData, error: asyncDataError } = await useAsyncData(
   "fullAbonements",
   async () => {
-    const response = await $services.abonements.getFullAbonements();
-    const createResponseModel = createFamilyModelResponse(response);
-    return createResponseModel;
+    try {
+      const response = await $services.abonements.getFullAbonements();
+      const createdModel = createFamilyModelResponse(response);
+
+      if (!createdModel || !Array.isArray(createdModel)) {
+        console.error(
+          "[AbonementsTable] Error: createdModel is not a valid array.",
+          createdModel
+        );
+        return [];
+      }
+      return createdModel;
+    } catch (error) {
+      console.error(
+        "[AbonementsTable] Error during data fetching or processing:",
+        error
+      );
+      return [];
+    }
   }
 );
 
-fullAbonements.value = fullAbonementsData.value;
+if (asyncDataError.value) {
+  console.error(
+    "[AbonementsTable] Error from useAsyncData:",
+    asyncDataError.value
+  );
+  fullAbonements.value = [];
+  originalFullAbonements.value = [];
+} else if (fullAbonementsData.value) {
+  fullAbonements.value = JSON.parse(JSON.stringify(fullAbonementsData.value));
+  originalFullAbonements.value = JSON.parse(
+    JSON.stringify(fullAbonementsData.value)
+  );
+} else {
+  fullAbonements.value = [];
+  originalFullAbonements.value = [];
+}
 
 const daysOfCurrentMonth = ref($services.abonements.getDaysOfCurrentMonth());
 
@@ -26,30 +61,17 @@ const getStatusImage = (status) => {
   return statusImagesConstants[status] || null;
 };
 
-const getEvents = (day, abonementId) => {
-  // Проверяем, существует ли fullAbonements
-  if (!Array.isArray(fullAbonements.value)) {
-    return [];
-  }
+function getEvents(day, abonementId, family) {
+  if (!family || !Array.isArray(family.events)) return [];
 
-  // Ищем абонемент по ID
-  const abonement = fullAbonements.value.find(
-    (item) => item.abonement.abonementId === abonementId
-  );
-
-  if (!abonement || !abonement.events) {
-    return [];
-  }
-
-  // Фильтруем события по указанному дню
-  const filteredEvents = abonement.events.filter((event) => {
-    const eventDate = new Date(event.date);
-    const eventDay = eventDate.getDate();
-    return eventDay === Number(day);
+  return family.events.filter((event) => {
+    const eventDay = new Date(event.date).getDate();
+    return (
+      Number(eventDay) === Number(day)
+      // && Number(event.abonementId) === Number(abonementId) // TO DO
+    );
   });
-
-  return filteredEvents;
-};
+}
 
 const emit = defineEmits(["openModalAdd", "openModalEdit"]);
 
@@ -58,12 +80,10 @@ const syncRowHeights = () => {
     const leftRows = document.querySelectorAll(".js-left-row");
     const rightRows = document.querySelectorAll(".js-right-row");
 
-    // Сначала сбросим высоты
     rightRows.forEach((row) => {
       row.style.height = "auto";
     });
 
-    // Затем установим новые высоты
     leftRows.forEach((leftRow, index) => {
       const rightRow = rightRows[index];
       if (rightRow) {
@@ -74,19 +94,83 @@ const syncRowHeights = () => {
   });
 };
 
-const openModalEdit = (family) => {
-  emit("openModal", { type: "edit", family });
+const openModalEdit = (familyFromTable) => {
+  const representativeClientId = familyFromTable.clients?.[0]?.clientId;
+
+  if (representativeClientId === undefined) {
+    console.warn(
+      "[AbonementsTable] Could not extract representativeClientId from familyFromTable. Modal might show filtered data."
+    );
+    emit("openModal", { type: "edit", family: familyFromTable });
+    return;
+  }
+
+  const originalFamily = originalFullAbonements.value.find((originalFam) =>
+    originalFam.clients?.some(
+      (client) => client.clientId === representativeClientId
+    )
+  );
+
+  if (originalFamily) {
+    emit("openModal", { type: "edit", family: originalFamily });
+  } else {
+    console.warn(
+      `[AbonementsTable] Original family with client ID '${representativeClientId}' not found. Modal will show table version.`
+    );
+    emit("openModal", { type: "edit", family: familyFromTable });
+  }
 };
 
 const openModalAdd = () => {
   emit("openModal", { type: "add" });
 };
 
+const sortState = ref([]);
+
+function handleSort(columnKey) {
+  const idx = sortState.value.findIndex((s) => s.key === columnKey);
+  if (idx !== -1) {
+    const currentOrder = sortState.value[idx].order;
+    if (currentOrder === "asc") sortState.value[idx].order = "desc";
+    else if (currentOrder === "desc") sortState.value.splice(idx, 1);
+  } else {
+    sortState.value.unshift({ key: columnKey, order: "asc" });
+  }
+
+  const sortings = sortState.value.map(({ key, order }) => ({
+    name: key,
+    type: order?.toUpperCase(),
+  }));
+
+  $services.abonements.getFullAbonements({ sortings }).then((response) => {
+    const createdModel = createFamilyModelResponse(response);
+    fullAbonements.value = JSON.parse(JSON.stringify(createdModel));
+    syncRowHeights();
+  });
+}
+
+// Единое вычисляемое свойство для состояний сортировки всех столбцов
+const columnSortOrdersMap = computed(() => {
+  return sortState.value.reduce((map, sortEntry) => {
+    map[sortEntry.key] = sortEntry.order;
+    return map;
+  }, {});
+});
+
+const filters = ref({ ...abonementFilters });
+
+function onFilterChange() {
+  handleFilterChange({
+    filters: { ...filters.value },
+    fullAbonements,
+    createFamilyModelResponse,
+    $services,
+  });
+}
+
 onMounted(async () => {
-  // Вызываем синхронизацию после монтирования
   syncRowHeights();
 
-  // Добавляем наблюдатель за изменениями размеров
   const observer = new ResizeObserver(() => {
     syncRowHeights();
   });
@@ -96,16 +180,12 @@ onMounted(async () => {
     observer.observe(tableWrapper);
   }
 
-  // Добавляем обработчик изменения размера окна
   window.addEventListener("resize", syncRowHeights);
 
-  // Удаляем обработчик при размонтировании компонента
   onUnmounted(() => {
     window.removeEventListener("resize", syncRowHeights);
     observer.disconnect();
   });
-  const response = await $services.abonements.getFullAbonements();
-  console.log("response", response);
 });
 </script>
 
@@ -128,96 +208,320 @@ onMounted(async () => {
             ></div>
             <div
               class="abonements-table__header-cell abonements-table__header-cell--number"
+              @click="handleSort('abonements.abonement_id')"
             >
               №
-            </div>
-            <div
-              class="abonements-table__header-cell abonements-table__header-cell--date-active"
-            >
-              Д.Акт
-            </div>
-            <div
-              class="abonements-table__header-cell abonements-table__header-cell--date-end"
-            >
-              Д.Зав
-            </div>
-            <div
-              class="abonements-table__header-cell abonements-table__header-cell--session-all"
-            >
-              З.Всг
-            </div>
-            <div
-              class="abonements-table__header-cell abonements-table__header-cell--session-left"
-            >
-              З.Ост
-            </div>
-            <div
-              class="abonements-table__header-cell abonements-table__header-cell--status"
-            >
-              Ст.
-            </div>
-            <div
-              class="abonements-table__header-cell abonements-table__header-cell--surname"
-            >
-              ФИО ребёнка
-            </div>
-          </div>
-          <div
-            class="abonements-table__body-row js-left-row"
-            v-for="(item, index) in fullAbonements"
-            :key="index"
-          >
-            <div
-              class="abonements-table__body-cell abonements-table__body-cell--settings"
-            >
               <img
-                src="public/icons/more_table_settings.svg"
-                @click="openModalEdit(item)"
+                class="abonements-table__sort-icon"
+                :class="{
+                  'abonements-table__sort-icon--asc':
+                    columnSortOrdersMap['abonements.abonement_id'] === 'asc',
+                  'abonements-table__sort-icon--desc':
+                    columnSortOrdersMap['abonements.abonement_id'] === 'desc',
+                  'abonements-table__sort-icon--hidden':
+                    !columnSortOrdersMap['abonements.abonement_id'],
+                }"
+                src="public/icons/arrow_down_icon-long.svg"
+                alt="arrow"
               />
             </div>
             <div
-              class="abonements-table__body-cell abonements-table__body-cell--number"
+              class="abonements-table__header-cell abonements-table__header-cell--date-active"
+              @click="handleSort('abonements.date_start')"
             >
-              {{ item.abonement.abonementId }}
+              Д.Акт
+              <img
+                class="abonements-table__sort-icon"
+                :class="{
+                  'abonements-table__sort-icon--asc':
+                    columnSortOrdersMap['abonements.date_start'] === 'asc',
+                  'abonements-table__sort-icon--desc':
+                    columnSortOrdersMap['abonements.date_start'] === 'desc',
+                  'abonements-table__sort-icon--hidden':
+                    !columnSortOrdersMap['abonements.date_start'],
+                }"
+                src="public/icons/arrow_down_icon-long.svg"
+                alt="arrow"
+              />
             </div>
             <div
-              class="abonements-table__body-cell abonements-table__body-cell--date-active"
+              class="abonements-table__header-cell abonements-table__header-cell--date-end"
+              @click="handleSort('abonements.date_end')"
             >
-              <!-- {{ item.abonement.dateStart }} -->
+              Д.Зав
+              <img
+                class="abonements-table__sort-icon"
+                :class="{
+                  'abonements-table__sort-icon--asc':
+                    columnSortOrdersMap['abonements.date_end'] === 'asc',
+                  'abonements-table__sort-icon--desc':
+                    columnSortOrdersMap['abonements.date_end'] === 'desc',
+                  'abonements-table__sort-icon--hidden':
+                    !columnSortOrdersMap['abonements.date_end'],
+                }"
+                src="public/icons/arrow_down_icon-long.svg"
+                alt="arrow"
+              />
             </div>
             <div
-              class="abonements-table__body-cell abonements-table__body-cell--date-end"
+              class="abonements-table__header-cell abonements-table__header-cell--session-all"
+              @click="handleSort('abonements.visits_quantity')"
             >
-              <!-- {{ item.abonement.dateEnd }} -->
+              Зн.<br />
+              Всг.
+              <img
+                class="abonements-table__sort-icon"
+                :class="{
+                  'abonements-table__sort-icon--asc':
+                    columnSortOrdersMap['abonements.visits_quantity'] === 'asc',
+                  'abonements-table__sort-icon--desc':
+                    columnSortOrdersMap['abonements.visits_quantity'] ===
+                    'desc',
+                  'abonements-table__sort-icon--hidden':
+                    !columnSortOrdersMap['abonements.visits_quantity'],
+                }"
+                src="public/icons/arrow_down_icon-long.svg"
+                alt="arrow"
+              />
             </div>
             <div
-              class="abonements-table__body-cell abonements-table__body-cell--session-all"
+              class="abonements-table__header-cell abonements-table__header-cell--session-left"
+              @click="handleSort('abonements.visits_left')"
             >
-              {{ item.abonement.visitsQuantity }}
+              Зн.<br />
+              Ост.
+              <img
+                class="abonements-table__sort-icon"
+                :class="{
+                  'abonements-table__sort-icon--asc':
+                    columnSortOrdersMap['abonements.visits_left'] === 'asc',
+                  'abonements-table__sort-icon--desc':
+                    columnSortOrdersMap['abonements.visits_left'] === 'desc',
+                  'abonements-table__sort-icon--hidden':
+                    !columnSortOrdersMap['abonements.visits_left'],
+                }"
+                src="public/icons/arrow_down_icon-long.svg"
+                alt="arrow"
+              />
             </div>
             <div
-              class="abonements-table__body-cell abonements-table__body-cell--session-left"
+              class="abonements-table__header-cell abonements-table__header-cell--status"
+              @click="handleSort('abonements.status_id')"
             >
-              {{ item.abonement.visitsLeft }}
+              Ст.
+              <img
+                class="abonements-table__sort-icon"
+                :class="{
+                  'abonements-table__sort-icon--asc':
+                    columnSortOrdersMap['abonements.status_id'] === 'asc',
+                  'abonements-table__sort-icon--desc':
+                    columnSortOrdersMap['abonements.status_id'] === 'desc',
+                  'abonements-table__sort-icon--hidden':
+                    !columnSortOrdersMap['abonements.status_id'],
+                }"
+                src="public/icons/arrow_down_icon-long.svg"
+                alt="arrow"
+              />
             </div>
             <div
-              class="abonements-table__body-cell abonements-table__body-cell--status"
+              class="abonements-table__header-cell abonements-table__header-cell--surname"
+              @click="handleSort('clients.surname')"
             >
-              <img :src="getStatusImage(item.abonement.statusType)" />
+              ФИО ребёнка
+              <img
+                class="abonements-table__sort-icon abonements-table__sort-icon--abosolute"
+                :class="{
+                  'abonements-table__sort-icon--asc':
+                    columnSortOrdersMap['clients.surname'] === 'asc',
+                  'abonements-table__sort-icon--desc':
+                    columnSortOrdersMap['clients.surname'] === 'desc',
+                  'abonements-table__sort-icon--hidden':
+                    !columnSortOrdersMap['clients.surname'],
+                }"
+                src="public/icons/arrow_down_icon-long.svg"
+                alt="arrow"
+              />
+            </div>
+          </div>
+
+          <!-- second row -->
+
+          <div
+            class="abonements-table__header-row abonements-table__header-row--secondary"
+          >
+            <div
+              class="abonements-table__header-cell abonements-table__header-cell--filter abonements-table__header-cell--settings"
+            ></div>
+            <div
+              class="abonements-table__header-cell abonements-table__header-cell--filter abonements-table__header-cell--number"
+            >
+              <ui-fields-input-table-filter
+                :id="`abonementId_${uuidV4}`"
+                class="abonements-table__field"
+                type="number"
+                name="abonementId"
+                v-model="filters.abonementId"
+                @update:modelValue="onFilterChange"
+              ></ui-fields-input-table-filter>
             </div>
             <div
-              class="abonements-table__body-cell abonements-table__body-cell--surname"
+              class="abonements-table__header-cell abonements-table__header-cell--filter abonements-table__header-cell--date-active"
             >
-              <div class="abonements-table__clients-list">
-                <div
-                  v-for="client in item.clients"
-                  :key="client.id"
-                  class="abonements-table__client-info"
-                >
-                  {{ client.clientName }} {{ client.clientSurname }}
-                  <span class="abonements-table__client-info--patronymic">{{
-                    client.clientPatronymic
-                  }}</span>
+              <ui-fields-input-table-filter
+                :id="`dateStart_${uuidV4}`"
+                class="abonements-table__field"
+                type="date"
+                name="dateStart"
+                v-model="filters.dateStart"
+                @update:modelValue="onFilterChange"
+              ></ui-fields-input-table-filter>
+            </div>
+            <div
+              class="abonements-table__header-cell abonements-table__header-cell--filter abonements-table__header-cell--date-end"
+            >
+              <ui-fields-input-table-filter
+                :id="`dateEnd_${uuidV4}`"
+                class="abonements-table__field"
+                type="date"
+                name="dateEnd"
+                v-model="filters.dateEnd"
+                @update:modelValue="onFilterChange"
+              ></ui-fields-input-table-filter>
+            </div>
+            <div
+              class="abonements-table__header-cell abonements-table__header-cell--filter abonements-table__header-cell--session-all"
+            >
+              <ui-fields-input-table-filter
+                :id="`visitsQuantity_${uuidV4}`"
+                class="abonements-table__field"
+                type="number"
+                name="visitsQuantity"
+                v-model="filters.visitsQuantity"
+                @update:modelValue="onFilterChange"
+              ></ui-fields-input-table-filter>
+            </div>
+            <div
+              class="abonements-table__header-cell abonements-table__header-cell--filter abonements-table__header-cell--session-left"
+            >
+              <ui-fields-input-table-filter
+                :id="`visitsLeft_${uuidV4}`"
+                class="abonements-table__field"
+                type="number"
+                name="visitsLeft"
+                v-model="filters.visitsLeft"
+                @update:modelValue="onFilterChange"
+              ></ui-fields-input-table-filter>
+            </div>
+            <div
+              class="abonements-table__header-cell abonements-table__header-cell--filter abonements-table__header-cell--status"
+            >
+              <ui-fields-input-table-filter
+                :id="`statusId_${uuidV4}`"
+                class="abonements-table__field"
+                type="number"
+                name="statusId"
+                v-model="filters.statusId"
+                @update:modelValue="onFilterChange"
+              ></ui-fields-input-table-filter>
+            </div>
+            <div
+              class="abonements-table__header-cell abonements-table__header-cell--filter abonements-table__header-cell--surname"
+            >
+              Ф
+              <ui-fields-input-table-filter
+                :id="`surname_${uuidV4}`"
+                class="abonements-table__field-filter"
+                type="text"
+                name="surname"
+                v-model="filters.surname"
+                @update:modelValue="onFilterChange"
+                placeholder="Фамилия"
+              >
+              </ui-fields-input-table-filter>
+              И
+              <ui-fields-input-table-filter
+                :id="`name_${uuidV4}`"
+                class="abonements-table__field-filter"
+                type="text"
+                name="name"
+                v-model="filters.name"
+                @update:modelValue="onFilterChange"
+                placeholder="Имя"
+              >
+              </ui-fields-input-table-filter>
+              О
+              <ui-fields-input-table-filter
+                :id="`patronymic_${uuidV4}`"
+                class="abonements-table__field-filter"
+                type="text"
+                name="patronymic"
+                v-model="filters.patronymic"
+                @update:modelValue="onFilterChange"
+                placeholder="Отчество"
+              ></ui-fields-input-table-filter>
+            </div>
+          </div>
+          <div
+            v-for="(family, familyIdx) in fullAbonements"
+            :key="'family-' + familyIdx"
+          >
+            <div
+              v-for="abonement in family.abonements"
+              :key="'abonement-' + abonement.abonementId"
+              class="abonements-table__body-row js-left-row"
+            >
+              <div
+                class="abonements-table__body-cell abonements-table__body-cell--settings"
+              >
+                <img
+                  src="public/icons/more_table_settings.svg"
+                  @click="openModalEdit(family)"
+                />
+              </div>
+              <div
+                class="abonements-table__body-cell abonements-table__body-cell--number"
+              >
+                {{ abonement.abonementId }}
+              </div>
+              <div
+                class="abonements-table__body-cell abonements-table__body-cell--date-active"
+              >
+                {{ formatDate(abonement.dateStart, true) }}
+              </div>
+              <div
+                class="abonements-table__body-cell abonements-table__body-cell--date-end"
+              >
+                {{ formatDate(abonement.dateEnd, true) }}
+              </div>
+              <div
+                class="abonements-table__body-cell abonements-table__body-cell--session-all"
+              >
+                {{ abonement.visitsQuantity }}
+              </div>
+              <div
+                class="abonements-table__body-cell abonements-table__body-cell--session-left"
+              >
+                {{ abonement.visitsLeft }}
+              </div>
+              <div
+                class="abonements-table__body-cell abonements-table__body-cell--status"
+              >
+                <img :src="getStatusImage(abonement.statusId)" />
+              </div>
+              <div
+                class="abonements-table__body-cell abonements-table__body-cell--surname"
+              >
+                <div class="abonements-table__clients-list">
+                  <div
+                    v-for="client in family.clients"
+                    :key="client.clientId"
+                    class="abonements-table__client-info"
+                  >
+                    {{ client.clientSurname }} {{ client.clientName }}
+                    <span class="abonements-table__client-info--patronymic">
+                      {{ client.clientPatronymic }}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -236,22 +540,43 @@ onMounted(async () => {
               {{ day }}
             </div>
           </div>
+          <div
+            class="abonements-table__header-row abonements-table__header-row--secondary"
+          >
+            <div
+              class="abonements-table__header-cell-event"
+              v-for="day in daysOfCurrentMonth"
+              :key="day"
+            >
+              <!-- {{ day }} -->
+            </div>
+          </div>
+
           <div class="abonements-table__events-rows">
             <div
-              class="abonements-table__body-row js-right-row"
-              v-for="item in fullAbonements"
-              :key="item.abonement.abonementId"
+              v-for="(family, familyIdx) in fullAbonements"
+              :key="'events-family-' + familyIdx"
             >
               <div
-                class="abonements-table__body-cell-event"
-                v-for="day in daysOfCurrentMonth"
-                :key="day"
+                v-for="abonement in family.abonements"
+                :key="'events-abonement-' + abonement.abonementId"
+                class="abonements-table__body-row js-right-row"
               >
                 <div
-                  v-for="event in getEvents(day, item.abonement.abonementId)"
-                  :key="event.eventId"
+                  class="abonements-table__body-cell-event"
+                  v-for="day in daysOfCurrentMonth"
+                  :key="day"
                 >
-                  {{ event.value || null }}
+                  <div
+                    v-for="event in getEvents(
+                      day,
+                      abonement.abonementId,
+                      family
+                    )"
+                    :key="event.eventId"
+                  >
+                    {{ event.value || null }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -303,6 +628,25 @@ onMounted(async () => {
     }
   }
 
+  &__field {
+    display: flex;
+  }
+
+  &__field-filter {
+    display: flex;
+    margin: 0 4px 0 4px;
+  }
+
+  &__header-surname {
+    margin-left: auto;
+
+    font-size: 1.4rem;
+
+    &--sort {
+      margin-left: auto;
+    }
+  }
+
   &__header-add {
     height: 2.2rem;
     margin-left: 9px;
@@ -312,22 +656,41 @@ onMounted(async () => {
   &__header-row {
     display: flex;
     align-items: stretch;
-    height: 40px;
+    height: 4rem;
 
     color: var(--color-main-tertiary);
 
     background-color: var(--color-main-tertiary-lightest);
     border-bottom: 1px solid var(--color-main-tertiary-lighter);
+
+    &--secondary {
+      height: 2.9rem;
+    }
   }
 
   &__header-cell {
     display: flex;
-    justify-content: center;
+    justify-content: space-around;
     align-items: center;
     padding: 4px;
+
     text-align: center;
     font-size: 1.4rem;
+
     border-right: 1px solid var(--color-main-tertiary-lighter);
+    cursor: pointer;
+
+    transition: background-color 0.3s;
+    &:hover {
+      background-color: var(--color-main-tertiary-lighter);
+    }
+
+    &--filter {
+      &:hover {
+        background-color: var(--color-main-tertiary-lightest);
+        cursor: default;
+      }
+    }
 
     &--settings {
       width: 2rem;
@@ -358,6 +721,8 @@ onMounted(async () => {
     }
 
     &--surname {
+      position: relative;
+
       width: 28.8rem;
     }
   }
@@ -443,6 +808,28 @@ onMounted(async () => {
     }
   }
 
+  &__sort-icon {
+    opacity: 0.4;
+    cursor: pointer;
+    transition: opacity 0.3s, transform 0.3s;
+    &--desc {
+      opacity: 1;
+      transform: rotate(180deg);
+    }
+    &--asc {
+      opacity: 1;
+      transform: rotate(0deg);
+    }
+    &--hidden {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+    &--abosolute {
+      position: absolute;
+      right: 0.6rem;
+    }
+  }
+
   &__table-events {
     overflow-x: auto;
     background-color: var(--color-main-tertiary-lightest);
@@ -456,6 +843,7 @@ onMounted(async () => {
     display: flex;
     justify-content: center;
     align-items: center;
+    width: 2.499rem;
     min-width: 2.499rem;
     padding: 0.4rem;
 
@@ -479,6 +867,7 @@ onMounted(async () => {
     display: flex;
     justify-content: center;
     align-items: center;
+    width: 2.499rem;
     min-width: 2.499rem;
     padding: 0.4rem;
     text-align: center;
