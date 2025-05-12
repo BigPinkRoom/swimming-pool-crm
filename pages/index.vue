@@ -2,6 +2,7 @@
 import ContentClientAdd from "@/components/ui/Modals/ModalSide/components/ContentClientAdd/index.vue";
 import FooterMain from "@/components/ui/Modals/ModalSide/components/FooterMain.vue";
 import { filterFilledObjects } from "@/helpers/filterFilledObjects.js";
+import { ref, computed } from "vue";
 
 import AbonementEntity from "@/entities/abonementEntity";
 
@@ -17,7 +18,7 @@ const { createAddFamilyFormData, createFamilyModelRequest } =
   new AbonementEntity();
 
 const modalSideActive = ref(false);
-const selectedClientData = ref("add");
+const selectedClientData = ref({ type: "add", family: null });
 const contentClientAddRef = ref(null);
 
 const { $services, $showError } = useNuxtApp();
@@ -26,107 +27,144 @@ const actionType = computed(() => {
   return selectedClientData.value;
 });
 
-const openModalSide = (value) => {
-  selectedClientData.value = value;
-  modalSideActive.value = true;
-};
 const closeModalSide = () => {
   modalSideActive.value = false;
+  selectedClientData.value = { type: "add", family: null };
+  clientsStore.reset();
+  relativesStore.reset();
+  abonementsStore.setFilledObject([]);
+};
+
+const openModalSide = (clientDataFromTable) => {
+  if (clientDataFromTable && clientDataFromTable.type === "edit") {
+    selectedClientData.value = {
+      type: clientDataFromTable.type,
+      family: clientDataFromTable.family,
+    };
+  } else {
+    selectedClientData.value = {
+      type: "add",
+      family: null,
+    };
+  }
+  modalSideActive.value = true;
+};
+
+const handleFamilyDataUpdatedFromSearch = (familyDataFromSearch) => {
+  selectedClientData.value = {
+    type: "add",
+    family: familyDataFromSearch,
+  };
 };
 
 const sendFamily = async () => {
-  // Подготавливаем данные для отправки
-  const prepareData = (items) => {
-    return items.map((item) => {
-      if (!item.id) {
-        const { id, ...itemWithoutId } = item;
-        return itemWithoutId;
-      }
+  const clientsForRequest = clientsStore.clients
+    .filter((client) => client.name && client.name.trim() !== "")
+    .map((client) => ({
+      name: client.name,
+      surname: client.surname,
+      patronymic: client.patronymic,
+      birthday: client.birthday,
+      gender: client.gender,
+      ...(client.id && { id: client.id }),
+    }));
 
-      // Для временных идентификаторов (начинающихся с temp_), удаляем их перед отправкой
-      if (item.id && item.id.toString().startsWith("temp_")) {
-        const { id, ...itemWithoutId } = item;
-        return itemWithoutId;
-      }
+  const relativesForRequest = relativesStore.relatives
+    .filter((relative) => relative.name && relative.name.trim() !== "")
+    .map((relative) => ({
+      name: relative.name,
+      surname: relative.surname,
+      patronymic: relative.patronymic,
+      relative_type_id: relative.relativeTypeId,
+      telephone: relative.telephone,
+      ...(relative.id && { id: relative.id }),
+    }));
 
-      return item;
-    });
+  const abonementsForRequest = abonementsStore.abonements
+    .filter((a) => a && a.abonement_id)
+    .map((a) => ({
+      abonement_id: a.abonement_id,
+      visits_quantity: a.visits_quantity,
+      visits_left: a.visits_left,
+      date_create: a.date_create,
+      date_start: a.date_start,
+      date_end: a.date_end,
+      user_created_id: a.user_created_id,
+      status_id: a.status_id,
+      branch_id: a.branch_id,
+      // ...добавьте другие поля, если нужно
+    }));
+
+  const familyRequest = {
+    family: {
+      clients: clientsForRequest,
+      relatives: relativesForRequest,
+      abonements: abonementsForRequest,
+    },
   };
 
-  const familyModelRequest = createFamilyModelRequest({
-    clients: filterFilledObjects(clientsStore.clients),
-    relatives: filterFilledObjects(relativesStore.relatives),
-    abonements: abonementsStore.abonements,
-  });
-
-  const family = createAddFamilyFormData({
-    clients: prepareData(filterFilledObjects(familyModelRequest.clients)),
-    relatives: prepareData(filterFilledObjects(familyModelRequest.relatives)),
-    abonements: familyModelRequest.abonements,
-  });
-
-  return family;
-};
-
-/**
- * Обновляет идентификаторы родственников и клиентов после ответа сервера
- * @param {Object} response - Ответ сервера
- */
-const updateIdsFromResponse = (response) => {
-  // Обновляем ID только у новых клиентов
-  if (response.createdClientIds) {
-    const newClients = clientsStore.clients.filter(
-      (client) =>
-        !client.id || (client.id && client.id.toString().startsWith("temp_"))
-    );
-    newClients.forEach((client, index) => {
-      if (response.createdClientIds[index]) {
-        client.id = response.createdClientIds[index];
-      }
-    });
-  }
-
-  // Обновляем ID только у новых родственников
-  if (response.createdRelativeIds) {
-    const newRelatives = relativesStore.relatives.filter(
-      (relative) =>
-        !relative.id ||
-        (relative.id && relative.id.toString().startsWith("temp_"))
-    );
-    newRelatives.forEach((relative, index) => {
-      if (response.createdRelativeIds[index]) {
-        relative.id = response.createdRelativeIds[index];
-        console.log(
-          `Родственнику установлен ID ${response.createdRelativeIds[index]} от сервера`
-        );
-      }
-    });
-  }
+  return familyRequest;
 };
 
 const updateFamily = async (request) => {
-  try {
-    const response = await $services.abonements.updateFamily(request);
-    updateIdsFromResponse(response);
-  } catch (error) {
-    console.error("Error updating family data:", error);
-    if (error.value?.data?.error?.message) {
-      $showError(error.value.data.error.message);
-    } else {
-      $showError("Произошла ошибка при обновлении данных");
-    }
-  }
+  const formData = createAddFamilyFormData({
+    clients: request.family.clients,
+    relatives: request.family.relatives,
+    abonements: request.family.abonements,
+  });
+  await $services.abonements.updateFamily(formData);
+};
+
+const updateIdsFromResponse = (response) => {
+  // console.log("Received response after addFamily:", response);
 };
 
 const handleFormSubmit = async () => {
   try {
     const request = await sendFamily();
 
-    if (actionType.value.type === "edit") {
+    // Получаем ref на компонент абонементов
+    const fieldsetAbonements =
+      contentClientAddRef.value?.$refs?.fieldsetAbonements;
+    let tempAbonement = null;
+    if (
+      fieldsetAbonements &&
+      typeof fieldsetAbonements.getCurrentTempAbonement === "function"
+    ) {
+      tempAbonement = fieldsetAbonements.getCurrentTempAbonement();
+    }
+    // Если выбран режим "Добавить новый" и абонемент заполнен, добавляем его в массив для отправки
+    if (
+      tempAbonement &&
+      tempAbonement.quantity &&
+      tempAbonement.duration &&
+      tempAbonement.activationDate
+    ) {
+      // Добавляем новый абонемент в массив для отправки
+      request.family.abonements.push({
+        quantity: tempAbonement.quantity,
+        duration: tempAbonement.duration,
+        activation_date: tempAbonement.activationDate,
+      });
+    }
+
+    // Определяем, нужно обновлять существующую семью (если она пришла из поиска или редактирования)
+    // Семья считается существующей, если она открыта на редактирование (type === 'edit')
+    // или если она пришла из поиска и содержит хотя бы одного клиента или родственника с ID.
+    const familyExists =
+      actionType.value.type === "edit" ||
+      actionType.value.family?.clients?.some((client) => client.id) ||
+      actionType.value.family?.relatives?.some((relative) => relative.id);
+
+    if (familyExists) {
       await updateFamily(request);
     } else {
-      // При добавлении новой семьи также обрабатываем ID от сервера
-      const response = await $services.abonements.addFamily(request);
+      const formData = createAddFamilyFormData({
+        clients: request.family.clients,
+        relatives: request.family.relatives,
+        abonements: request.family.abonements,
+      });
+      const response = await $services.abonements.addFamily(formData);
       updateIdsFromResponse(response);
     }
     closeModalSide();
@@ -150,10 +188,13 @@ const handleFormSubmit = async () => {
         sticky
         position="left"
         @close="closeModalSide"
-        :title="$t(`forms.client.${actionType?.type}.title`)"
+        :title="$t(`forms.client.${actionType?.type || 'add'}.title`)"
       >
         <template #content>
-          <ContentClientAdd ref="contentClientAddRef" :actionType="actionType"
+          <ContentClientAdd
+            ref="contentClientAddRef"
+            :actionType="actionType"
+            @family-data-updated="handleFamilyDataUpdatedFromSearch"
         /></template>
         <template #footer>
           <FooterMain
