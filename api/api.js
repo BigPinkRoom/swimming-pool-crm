@@ -4,6 +4,7 @@ import User from "./modules/user.js";
 import Abonements from "./modules/abonements";
 import Relatives from "./modules/relatives";
 import Families from "./modules/families";
+import Clients from "./modules/clients";
 
 export default class Api {
   constructor(app) {
@@ -13,5 +14,6 @@ export default class Api {
     this.abonements = new Abonements(app);
     this.relatives = new Relatives(app);
     this.families = new Families(app);
+    this.clients = new Clients(app);
   }
 }

@@ -3,9 +3,9 @@ export default class Clients {
     this.context = context;
   }
 
-  async add(params) {
+  async getClientById(id) {
     try {
-      const response = await useApi("clients/add", "POST", params);
+      const response = await useApi("clients/get-client-by-id", "POST", id);
 
       return response;
     } catch (error) {
