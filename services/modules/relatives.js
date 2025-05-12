@@ -275,4 +275,13 @@ export default class Relatives {
       currentRelativeId.value--;
     }
   };
+
+  getRelativeById = async (id) => {
+    const params = {
+      id,
+    };
+    const relative = await this.context.$api.relatives.getRelativeById(params);
+
+    return relative;
+  };
 }

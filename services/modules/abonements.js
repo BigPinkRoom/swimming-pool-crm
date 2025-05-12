@@ -24,7 +24,7 @@ export default class Abonements {
       const params = {};
 
       if (!sortings.length) {
-        params.sortings = [{ name: "clients.name", type: "DESC" }];
+        params.sortings = [{ name: "abonements.abonement_id", type: "ASC" }];
       } else {
         params.sortings = sortings;
       }

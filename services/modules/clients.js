@@ -10,7 +10,7 @@ export default class Clients {
    * @param {Object} options - Параметры инициализации.
    * @param {Object} options.context - Контекст приложения (например, Nuxt контекст).
    */
-  constructor({ context } = {}) {
+  constructor(context) {
     /**
      * @type {Object}
      * @description Контекст приложения, который может использоваться для доступа к глобальным объектам или сервисам.
@@ -92,4 +92,13 @@ export default class Clients {
 
     return `${day}.${month}.${year}`;
   }
+
+  getClientById = async (id) => {
+    const params = {
+      id,
+    };
+    const client = await this.context.$api.clients.getClientById(params);
+
+    return client;
+  };
 }
