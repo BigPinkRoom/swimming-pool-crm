@@ -34,6 +34,7 @@ export default defineNuxtConfig({
   // },
 
   css: [
+    'floating-vue/dist/style.css',
     "~/assets/css/fonts.css",
     "~/assets/scss/global.scss",
     "~/assets/scss/global/variables.scss",
