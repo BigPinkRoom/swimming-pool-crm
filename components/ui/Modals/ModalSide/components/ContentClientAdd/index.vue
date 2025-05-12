@@ -4,20 +4,34 @@ import FieldsetSearch from "./components/Search.vue";
 import FieldsetClientAdd from "./components/AddGroupClient";
 import FieldsetAbonements from "./components/AddGroupAbonements";
 import FieldsetRelatives from "./components/AddGroupRelatives";
+import { ref, computed } from "vue";
 
 const props = defineProps({
-  actionType: { type: String },
+  actionType: { type: Object },
 });
 
-const emit = defineEmits(["submit"]);
+const emit = defineEmits(["submit", "family-data-updated"]);
 
 const formRef = ref(null);
 
 const showAbonements = ref(true);
 
+const isFamilyFromSearch = computed(() => {
+  return (
+    props.actionType?.source === "search" ||
+    (props.actionType?.family &&
+      Object.keys(props.actionType.family).length > 0)
+  );
+});
+
 const checkboxAbonementHandler = (value) => {
   showAbonements.value = value;
 };
+
+const handleFamilySelectedFromSearch = (familyData) => {
+  emit("family-data-updated", familyData);
+};
+
 // const submitForm = () => {
 //   emit("submit");
 // };
@@ -30,11 +44,17 @@ const checkboxAbonementHandler = (value) => {
 <template>
   <form class="client-main" ref="formRef">
     <div class="client-main__item">
-      <fieldset-search :action-type="actionType" />
+      <fieldset-search
+        :action-type="actionType"
+        @family-selected="handleFamilySelectedFromSearch"
+      />
     </div>
 
     <div class="client-main__item">
-      <fieldset-client-add :action-type="actionType" />
+      <fieldset-client-add
+        :action-type="actionType"
+        :is-family-from-search="isFamilyFromSearch"
+      />
     </div>
 
     <div class="client-main__item">
@@ -46,7 +66,11 @@ const checkboxAbonementHandler = (value) => {
         id="mainAbonementCheckbox"
         name="mainAbonementCheckbox"
         :label="
-          $t(`forms.client.${actionType.type}.fields.abonementBinding.label`)
+          $t(
+            `forms.client.${
+              actionType?.type || 'add'
+            }.fields.abonementBinding.label`
+          )
         "
         checked
         @checkboxChange="checkboxAbonementHandler"
@@ -54,7 +78,11 @@ const checkboxAbonementHandler = (value) => {
     </div>
 
     <div class="client-main__item">
-      <fieldset-abonements :action-type="actionType" v-if="showAbonements" />
+      <fieldset-abonements
+        ref="fieldsetAbonements"
+        :action-type="actionType"
+        v-if="showAbonements"
+      />
     </div>
   </form>
 </template>
