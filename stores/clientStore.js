@@ -34,7 +34,11 @@ export const useClientsStore = defineStore("clients", () => {
    */
   function setClientOfEdit(payload) {
     clients.push(payload);
-    currentClientId.value = clients.length;
+  }
+
+  function addClient(payload) {
+    clients.push(payload);
+    currentClientId.value = null;
   }
 
   /**
@@ -88,7 +92,7 @@ export const useClientsStore = defineStore("clients", () => {
    * Сбрасывает стор
    */
   const reset = () => {
-    clients.splice(0, clients.length);
+    clients.length = 0;
     currentClientId.value = null;
   };
 
@@ -99,6 +103,7 @@ export const useClientsStore = defineStore("clients", () => {
     addEmpty,
     add,
     setClientOfEdit,
+    addClient,
     deleteClient,
     reset,
   };
