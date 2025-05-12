@@ -22,3 +22,26 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+/* Тултипы */
+.v-popper__inner {
+  padding: 8px 14px;
+
+  font-size: 14px;
+  color: var(--color-main) !important; /* Цвет текста */
+
+  background: var(--color-main-lighter) !important; /* Цвет фона тултипа */
+  border-radius: 4px !important; /* Скругление углов */
+  border: 1px solid var(--color-main-light) !important;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.v-popper--theme-tooltip .v-popper__arrow-inner {
+  border-color: var(--color-main-light) !important;
+  /* Если тултип сверху, то стрелка снизу — перекрашиваем только нужную сторону: */
+  border-top-color: var(--color-main-light) !important;
+  border-right-color: var(--color-main-light) !important;
+  border-bottom-color: var(--color-main-light) !important;
+  border-left-color: var(--color-main-light) !important;
+}
