@@ -20,6 +20,6 @@ export function relativeAddValidationSchema(t) {
     relativeTypeId: z.number({ message: t("zod.required") }),
     telephone: z
       .string({ message: t("zod.required") })
-      .min(16, { message: t("zod.tooSmall") }),
+      .min(18, { message: t("zod.tooSmall") }),
   });
 }
