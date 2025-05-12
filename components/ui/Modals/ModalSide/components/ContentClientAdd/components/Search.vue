@@ -1,12 +1,18 @@
 <script setup>
 import CardTable from "@/components/Common/CardTable.vue";
 import { searchValidationSchema } from "@/schemas/zod/searchScemas";
+import { useRelativesStore } from "@/stores/relativeStore";
+import { computed, reactive, ref } from "vue";
+import { useForm } from "vee-validate";
+import { toTypedSchema } from "@vee-validate/zod";
 
 const { $i18n } = useNuxtApp();
 const t = $i18n.t;
 const { $services } = useNuxtApp();
 
 const relativesStore = useRelativesStore();
+
+const emit = defineEmits(["family-selected"]);
 
 const validationSchema = toTypedSchema(searchValidationSchema(t));
 
@@ -19,6 +25,7 @@ const { errors, values, meta, validate, resetForm } = useForm({
 
 const search = ref("");
 const searchResult = ref([]);
+const isListCollapsing = ref(true);
 
 const getSearch = async (searchString) => {
   const resultSearch = await $services.families.search({ searchString });
@@ -29,14 +36,14 @@ const getRelativeType = (relativeTypeId) => {
   const relativesType = relativesStore.relativesTypes.find((item) => {
     return Number(item.value) === Number(relativeTypeId);
   });
-  return relativesType.text;
+  return relativesType?.text;
 };
 
 const getGender = (genderId) => {
   const foundGender = gender.find((item) => {
     return Number(item.value) === Number(genderId);
   });
-  return foundGender.label;
+  return foundGender?.label;
 };
 
 const gender = reactive([
@@ -47,10 +54,80 @@ const gender = reactive([
 const searchFamily = async () => {
   const resultValidate = await validate();
   if (resultValidate.valid) {
-    searchResult.value = await getSearch(search.value);
+    const newResults = await getSearch(search.value);
+    searchResult.value = newResults || [];
+    if (searchResult.value.length > 0) {
+      isListCollapsing.value = false;
+    } else {
+      isListCollapsing.value = true;
+    }
   } else {
-    return "";
+    if (!search.value && searchResult.value.length === 0) {
+      isListCollapsing.value = true;
+    } else if (searchResult.value.length > 0) {
+      isListCollapsing.value = false;
+    } else if (search.value && searchResult.value.length === 0) {
+      isListCollapsing.value = true;
+    }
   }
+};
+
+const selectFamilyAndEmit = async (element) => {
+  const selectedFamilyData = {
+    id: element._id,
+    clients: [],
+    relatives: [],
+    abonements: [],
+  };
+
+  if (element.clients) {
+    for (const item of element.clients) {
+      const clientDataArray = await $services.clients.getClientById(
+        item.client_id
+      );
+      if (clientDataArray && clientDataArray.length > 0) {
+        const clientData = clientDataArray[0];
+        selectedFamilyData.clients.push({
+          id: clientData.client_id,
+          name: clientData.name,
+          surname: clientData.surname,
+          patronymic: clientData.patronymic,
+          birthday: clientData.birthday,
+          gender: clientData.gender,
+        });
+      }
+    }
+  }
+
+  if (element.relatives) {
+    for (const item of element.relatives) {
+      const relativeDataArray = await $services.relatives.getRelativeById(
+        item.relative_id
+      );
+      if (relativeDataArray && relativeDataArray.length > 0) {
+        const relativeData = relativeDataArray[0];
+        selectedFamilyData.relatives.push({
+          id: relativeData.relative_id,
+          name: relativeData.name,
+          surname: relativeData.surname,
+          patronymic: relativeData.patronymic,
+          relativeTypeId: relativeData.relative_type_id,
+          telephone: relativeData.telephone,
+        });
+      }
+    }
+  }
+
+  if (element.abonements) {
+    selectedFamilyData.abonements = [...element.abonements];
+  }
+
+  emit("family-selected", selectedFamilyData);
+
+  isListCollapsing.value = true;
+  searchResult.value = [];
+  search.value = "";
+  resetForm();
 };
 </script>
 
@@ -79,38 +156,46 @@ const searchFamily = async () => {
             </div>
           </div>
         </div>
-        <div class="card-table__table-td card-table__table-td--edit">
+        <transition-group
+          tag="div"
+          name="search-item-animation"
+          class="card-table__table-td card-table__table-td--edit search-results-list"
+          :class="{ 'is-collapsing': isListCollapsing }"
+        >
           <div
             class="card-table__table-block"
             v-for="item in searchResult"
             :key="item.id"
+            @click="selectFamilyAndEmit(item)"
           >
             <div
               class="card-table__table-block-title"
-              v-for="element in item.relatives"
-              :key="element.id"
+              v-for="element_relative in item.relatives"
+              :key="element_relative.id"
             >
               <span class="card-table__table-block--semi-bold"
-                >{{ getRelativeType(element.relative_type_id) }}:</span
+                >{{ getRelativeType(element_relative.relative_type_id) }}:</span
               >
-              {{ element.name }} {{ element.surname }} {{ element.patronymic }}
+              {{ element_relative.surname }} {{ element_relative.name }}
+              {{ element_relative.patronymic }}
               <br />
               <span class="card-table__table-block--semi-bold"
-                >Телефон: {{ element.telephone }}</span
+                >Телефон: {{ element_relative.telephone }}</span
               >
             </div>
             <div
               class="card-table__table-block-title"
-              v-for="element in item.clients"
-              :key="element.id"
+              v-for="element_client in item.clients"
+              :key="element_client.id"
             >
               <span class="card-table__table-block--semi-bold"
-                >{{ getGender(element.gender) }}:</span
+                >{{ getGender(element_client.gender) }}:</span
               >
-              {{ element.name }} {{ element.surname }} {{ element.patronymic }}
+              {{ element_client.surname }} {{ element_client.name }}
+              {{ element_client.patronymic }}
             </div>
           </div>
-        </div>
+        </transition-group>
       </template>
       <template #footer>
         <div class="client-main__close" v-if="closeButton">
@@ -171,9 +256,7 @@ const searchFamily = async () => {
 
     display: flex;
 
-    border-top: 0;
-    border-left: 0;
-    border-bottom: 0;
+    border: 0;
 
     &:last-child {
       border-right: 0;
@@ -288,7 +371,7 @@ const searchFamily = async () => {
 
     font-size: 1.4rem;
 
-    border: 1px solid var(--color-main-tertiary-lighter);
+    background-color: var(--color-main-tertiary-lightest);
     border-left: 6px solid var(--color-main-tertiary-lighter);
     border-radius: 5px;
 
@@ -296,8 +379,10 @@ const searchFamily = async () => {
     transition: all 0.6s ease;
 
     &:hover {
-      background-color: var(--color-main-tertiary-lightest);
-      border-left: 6px solid var(--color-main-tertiary-light-2);
+      color: var(--color-main);
+
+      background-color: var(--color-main-lighter);
+      border-left: 6px solid var(--color-main-light);
     }
 
     &:last-child {
@@ -318,6 +403,34 @@ const searchFamily = async () => {
       font-size: 1.4rem;
       font-weight: 500;
     }
+  }
+}
+
+.search-item-animation-leave-active {
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.search-item-animation-leave-to {
+  opacity: 0;
+  transform: translateY(300px);
+}
+
+.search-results-list {
+  max-height: 80rem;
+
+  transition: max-height 0.5s ease-in-out, min-height 0.5s ease-in-out,
+    padding-top 0.5s ease-in-out, padding-bottom 0.5s ease-in-out,
+    padding-left 0.5s ease-in-out, padding-right 0.5s ease-in-out;
+
+  &.is-collapsing {
+    max-height: 0 !important;
+    min-height: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
 }
 </style>
