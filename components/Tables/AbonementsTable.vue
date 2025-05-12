@@ -171,6 +171,8 @@ function onFilterChange() {
 onMounted(async () => {
   syncRowHeights();
 
+  console.log("full abonements", fullAbonements.value);
+
   const observer = new ResizeObserver(() => {
     syncRowHeights();
   });
