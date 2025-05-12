@@ -1,7 +1,7 @@
 <script setup>
 import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
-import { computed } from "vue";
+import { computed, watch, reactive, ref, onUnmounted } from "vue";
 
 import { uuid } from "vue-uuid";
 
@@ -21,7 +21,7 @@ const abonementsStore = useAbonementsStore();
 const validationSchema = toTypedSchema(abonementValidationSchema(t));
 
 const props = defineProps({
-  actionType: { type: String, default: () => [] },
+  actionType: { type: Object, default: () => ({ type: "add", family: null }) },
   closeButton: { type: Boolean },
 });
 
@@ -43,34 +43,100 @@ const inputData = reactive([
   { id: 1, value: 1, label: "Изменить существующий" },
 ]);
 
-const toggleAbonementType = ref(props.actionType.type === "edit" ? 1 : 0);
+// toggleAbonementType должен инициализироваться на основе actionType.type, но также
+// должен учитывать, есть ли уже загруженные абонементы для выбора.
+const toggleAbonementType = ref(0); // По умолчанию "Добавить новый"
 
-// Формируем options-list для select из всех абонементов
+// Формируем options-list для select из абонементов в сторе
 const abonementOptions = computed(() => {
-  return props.actionType?.family?.abonements?.map((abonement) => ({
-    text: `№ ${abonement.abonementId} - (${abonement.visitsLeft ?? "-"} / ${
-      abonement.visitsQuantity ?? "-"
-    } занятий) До ${formatDate(abonement.dateEnd, true) ?? "-"}`,
-    value: abonement.abonementId,
-  }));
+  // Проверяем, есть ли абонементы в сторе и является ли это массивом
+  if (abonementsStore.abonements && Array.isArray(abonementsStore.abonements)) {
+    return abonementsStore.abonements.map((abonement) => ({
+      text: `№ ${abonement.abonement_id} - (${abonement.visits_left ?? "-"} / ${
+        abonement.visits_quantity ?? "-"
+      } занятий) До ${formatDate(abonement.date_end, true) ?? "-"}`, // Используем поля из лога
+      value: abonement.abonement_id, // Используем поля из лога
+    }));
+  }
+  return []; // Возвращаем пустой массив, если абонементов нет или стор некорректен
 });
 
 const tempAbonement = reactive({
   duration: null,
   quantity: null,
   activationDate: null,
-  selectedActiveAbonement: abonementOptions.value
-    ? abonementOptions.value[0]?.value
-    : null,
+  selectedActiveAbonement: null,
+});
+
+// Главный watch для загрузки данных абонементов из props.actionType
+watch(
+  () => props.actionType,
+  (newActionType) => {
+    const familyAbonements = newActionType?.family?.abonements;
+
+    if (familyAbonements && familyAbonements.length > 0) {
+      // Нормализуем структуру абонементов для корректного отображения
+      const normalized = familyAbonements.map((a) => ({
+        abonement_id: a.abonement_id ?? a.id ?? a.abonementId,
+        visits_quantity: a.visits_quantity ?? a.visitsQuantity,
+        visits_left: a.visits_left ?? a.visitsLeft,
+        date_create: a.date_create ?? a.dateCreate,
+        date_start: a.date_start ?? a.dateStart,
+        date_end: a.date_end ?? a.dateEnd,
+        user_created_id: a.user_created_id ?? a.userCreatedId,
+        status_id: a.status_id ?? a.statusId,
+        branch_id: a.branch_id ?? a.branchId,
+      }));
+      abonementsStore.setFilledObject(normalized);
+      toggleAbonementType.value = 1;
+      // Гарантируем выбор первого абонемента
+      tempAbonement.selectedActiveAbonement =
+        normalized[0]?.abonement_id ?? null;
+    } else {
+      abonementsStore.setFilledObject([]);
+      toggleAbonementType.value = 0;
+      tempAbonement.selectedActiveAbonement = null;
+    }
+  },
+  { immediate: true, deep: true }
+);
+
+watch(abonementOptions, (newOptions) => {
+  if (toggleAbonementType.value === 1) {
+    const newSelectedValue = newOptions?.[0]?.value ?? null;
+    // Если ничего не выбрано, выбираем первый
+    if (!tempAbonement.selectedActiveAbonement && newSelectedValue) {
+      tempAbonement.selectedActiveAbonement = newSelectedValue;
+    }
+  }
+});
+
+// Watch для реакции на переключение радиокнопок "Добавить новый" / "Изменить существующий"
+watch(toggleAbonementType, (newValue, oldValue) => {
+  if (newValue === 0) {
+    tempAbonement.selectedActiveAbonement = null;
+  } else {
+    const firstOptionValue = abonementOptions.value?.[0]?.value ?? null;
+    if (tempAbonement.selectedActiveAbonement !== firstOptionValue) {
+      tempAbonement.selectedActiveAbonement = firstOptionValue;
+    }
+  }
+  resetTempAbonement();
 });
 
 const resetTempAbonement = () => {
   tempAbonement.quantity = null;
   tempAbonement.duration = null;
   tempAbonement.activationDate = null;
-  tempAbonement.selectedActiveAbonement = abonementOptions.value
-    ? abonementOptions.value[0]?.value
-    : null;
+
+  resetForm({
+    values: {
+      quantity: null,
+      duration: null,
+      activationDate: "",
+      abonementType: toggleAbonementType.value,
+    },
+  });
 };
 
 const uuidV4 = uuid.v4();
@@ -83,25 +149,20 @@ const currentAbonement = computed(
     null
 );
 
-watch(tempAbonement, () => {
-  abonementsStore.setFilledObject([
-    {
-      quantity: tempAbonement.quantity,
-      duration: tempAbonement.duration,
-      activationDate: tempAbonement.activationDate,
-    },
-  ]);
+onUnmounted(() => {
+  abonementsStore.setFilledObject([]);
+  resetTempAbonement();
+  toggleAbonementType.value = 0;
+  tempAbonement.selectedActiveAbonement = null;
 });
 
-onUnmounted(() => {
-  resetTempAbonement();
-  abonementsStore.setFilledObject([
-    {
-      quantity: tempAbonement.quantity,
-      duration: tempAbonement.duration,
-      activationDate: tempAbonement.activationDate,
-    },
-  ]);
+defineExpose({
+  getCurrentTempAbonement: () => {
+    if (toggleAbonementType.value === 0) {
+      return { ...tempAbonement };
+    }
+    return null;
+  },
 });
 </script>
 

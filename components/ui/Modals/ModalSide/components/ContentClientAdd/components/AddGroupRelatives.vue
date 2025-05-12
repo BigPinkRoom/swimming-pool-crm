@@ -17,6 +17,7 @@ import { relativeAddValidationSchema } from "@/schemas/zod/relativeSchemas";
 import RelativeEntity from "@/entities/relativeEntity";
 import "cleave.js/dist/addons/cleave-phone.ru";
 import { relativesConstants } from "@/constants/relatives";
+import { unmaskPhone, maskPhone } from "@/helpers/phoneFormat";
 
 /**
  * @typedef {Object} Props
@@ -118,8 +119,6 @@ const addRelativeText = computed(() => {
     relativesStore.relatives.length >=
     relativesConstants.MAX_QUANTITY_RELATIVES;
 
-  console.log("relativesStore.relatives )))))))", relativesStore.relatives);
-
   if (checkRelativeLessMax) {
     return "+ Добавить ещё одного родственника";
   } else if (checkRelativeEqualMax) {
@@ -153,9 +152,9 @@ const getTempRelative = (indexOrId) => {
         relativeTypeId: relative.relativeTypeId || 1,
         telephone: relative.telephone || "",
       };
-      console.log(
-        `Создан временный кэш для родственника с ID/индексом ${indexOrId} из данных хранилища`
-      );
+      // console.log(
+      //   `Создан временный кэш для родственника с ID/индексом ${indexOrId} из данных хранилища`
+      // );
     } else {
       // Если родственник не найден, создаем пустой объект
       tempRelatives[indexOrId] = {
@@ -165,36 +164,10 @@ const getTempRelative = (indexOrId) => {
         relativeTypeId: 1,
         telephone: "",
       };
-      console.log(
-        `Создан пустой временный кэш для родственника с ID/индексом ${indexOrId}`
-      );
     }
   }
 
   return tempRelatives[indexOrId];
-};
-
-/**
- * Добавляет маску для ввода телефона
- */
-const addInputMask = () => {
-  if (telephoneMask.value?.$el) {
-    const inputElement = telephoneMask.value.$el.querySelector("input");
-    if (inputElement) {
-      if (inputElement._cleave) {
-        inputElement._cleave.destroy();
-      }
-      new Cleave(inputElement, {
-        phone: true,
-        phoneRegionCode: "RU",
-        prefix: "+7",
-        noImmediatePrefix: true,
-        delimiter: " ",
-        blocks: [3, 0, 3, 3, 2, 2],
-        numericOnly: true,
-      });
-    }
-  }
 };
 
 /**
@@ -203,7 +176,6 @@ const addInputMask = () => {
 const toggleEditing = async (value) => {
   if (value === true) {
     await nextTick();
-    addInputMask();
   }
   isEditing.value = value;
 };
@@ -221,12 +193,10 @@ const handleAddRelativeButtonClick = async () => {
 
     if (!validationResult.valid) {
       // Если валидация не прошла, останавливаем добавление нового родственника
-      console.log("Валидация не прошла, прерываем добавление");
       return;
     }
 
     // Если валидация успешна, сохраняем текущего родственника
-    console.log("Обновляем активного родственника");
     relativesStore.updateActiveRelative(
       relativeSections.value.active.id || relativesStore.currentRelativeId,
       currentTempRelative
@@ -235,9 +205,6 @@ const handleAddRelativeButtonClick = async () => {
 
   // Принудительно закрываем любое текущее редактирование
   isEditing.value = false;
-
-  // Добавляем нового родственника
-  console.log("Создаем нового родственника");
 
   // Если несохраненного родственника нет, создаем нового
   const newRelative = {
@@ -248,12 +215,12 @@ const handleAddRelativeButtonClick = async () => {
     telephone: "",
   };
 
-  // Добавляем нового родственника напрямую в массив
+  // Добавляем нового родственника
   relativesStore.relatives.push(newRelative);
 
   // Устанавливаем новый относительный индекс
   const tempIndex = relativesStore.relatives.length;
-  console.log("Создан новый родственник с индексом:", tempIndex);
+  // console.log("Создан новый родственник с индексом:", tempIndex);
   relativesStore.currentRelativeId = tempIndex;
   showOneMoreRelative.value = true;
 
@@ -269,9 +236,6 @@ const handleAddRelativeButtonClick = async () => {
 
   // Обновляем DOM перед применением маски
   isEditing.value = true;
-  await nextTick();
-  addInputMask();
-  console.log("handleAddRelativeButtonClick - завершено");
 };
 
 /**
@@ -304,7 +268,7 @@ const addOneMoreRelatives = async () => {
 
   // Устанавливаем новый относительный индекс
   const tempIndex = relativesStore.relatives.length;
-  console.log("Создан новый родственник с индексом:", tempIndex);
+  // console.log("Создан новый родственник с индексом:", tempIndex);
   relativesStore.currentRelativeId = tempIndex;
   showOneMoreRelative.value = true;
 
@@ -320,9 +284,6 @@ const addOneMoreRelatives = async () => {
 
   // Обновляем DOM перед применением маски
   isEditing.value = true;
-  await nextTick();
-  addInputMask();
-  console.log("addOneMoreRelatives - завершено");
 };
 
 /**
@@ -358,18 +319,18 @@ const changeEdit = async (index) => {
       relativeTypeId: storeRelative.relativeTypeId || 1,
       telephone: storeRelative.telephone || "",
     };
-    console.log(
-      `Обновлен временный кэш для родственника с ID/индексом ${index} из данных хранилища`
-    );
+    // console.log(
+    //   `Обновлен временный кэш для родственника с ID/индексом ${index} из данных хранилища`
+    // );
   }
 
   // Получаем данные из временного кэша
   const relativeData = getTempRelative(index);
 
-  console.log(
-    `Данные для формы редактирования родственника ${index}:`,
-    relativeData
-  );
+  // console.log(
+  //   `Данные для формы редактирования родственника ${index}:`,
+  //   relativeData
+  // );
 
   // Устанавливаем данные в форму
   resetForm({
@@ -381,9 +342,6 @@ const changeEdit = async (index) => {
       telephone: relativeData.telephone || "",
     },
   });
-
-  await nextTick();
-  addInputMask();
 };
 
 function setFormToUnsavedRelative(index, relative) {
@@ -398,7 +356,6 @@ function setFormToUnsavedRelative(index, relative) {
     },
   });
   isEditing.value = true;
-  nextTick().then(addInputMask);
 }
 
 function handleUnsavedRelative() {
@@ -457,8 +414,6 @@ const addRelativeToStore = async (activeIndex) => {
         });
 
         isEditing.value = true;
-        await nextTick();
-        addInputMask();
       } else {
         // Если лимит достигнут — просто закрываем режим редактирования
         isEditing.value = false;
@@ -473,11 +428,11 @@ const addRelativeToStore = async (activeIndex) => {
  * Удаляет родственника
  */
 const deleteRelative = async (index) => {
-  console.log("Удаление родственника с индексом/id:", index);
-  console.log(
-    "Список родственников до удаления:",
-    JSON.stringify(relativesStore.relatives)
-  );
+  // console.log("Удаление родственника с индексом/id:", index);
+  // console.log(
+  //   "Список родственников до удаления:",
+  //   JSON.stringify(relativesStore.relatives)
+  // );
 
   // Проверяем, существует ли родственник перед удалением
   const relativeIndex = $services.relatives.findRelativeIndexById(
@@ -493,7 +448,7 @@ const deleteRelative = async (index) => {
     return;
   }
 
-  console.log("Найденный индекс родственника в массиве:", relativeIndex);
+  // console.log("Найденный индекс родственника в массиве:", relativeIndex);
 
   // Удаляем родственника напрямую из массива, минуя хранилище
   relativesStore.relatives.splice(relativeIndex, 1);
@@ -501,10 +456,10 @@ const deleteRelative = async (index) => {
   // Очищаем временные данные
   delete tempRelatives[index];
 
-  console.log(
-    "Список родственников после удаления:",
-    JSON.stringify(relativesStore.relatives)
-  );
+  // console.log(
+  //   "Список родственников после удаления:",
+  //   JSON.stringify(relativesStore.relatives)
+  // );
 
   // Проверяем наличие несохраненного родственника (без id)
   const unsavedRelative = relativesStore.relatives.find(
@@ -543,9 +498,6 @@ const deleteRelative = async (index) => {
       resetForm({ values: getTempRelative(relativesStore.currentRelativeId) });
       toggleEditing(false); // Закрываем форму редактирования
     }
-
-    await nextTick();
-    addInputMask();
   } else {
     // Если больше нет родственников, автоматически открываем форму для добавления
     addOneMoreRelatives();
@@ -556,7 +508,7 @@ const deleteRelative = async (index) => {
  * Получает тип родственника по ID
  */
 const setRelativeTypeById = (relativeId) => {
-  const relativeType = relativesStore.relativesTypes.find(
+  const relativeType = relativesStore?.relativesTypes?.find(
     (type) => type.value === relativeId
   );
   return relativeType?.text;
@@ -567,19 +519,19 @@ const setRelativeTypeById = (relativeId) => {
  */
 const setEditRelative = () => {
   relativesStore.reset();
-  console.log("Сбрасываем хранилище родственников");
+  // console.log("Сбрасываем хранилище родственников");
 
   // Очищаем временный кэш
   Object.keys(tempRelatives).forEach((key) => delete tempRelatives[key]);
-  console.log("Очищаем временный кэш родственников");
+  // console.log("Очищаем временный кэш родственников");
 
   if (props.actionType?.type === "edit" && props.actionType.family?.relatives) {
     const relatives = props.actionType.family.relatives;
-    console.log("Получены родственники для редактирования:", relatives);
+    // console.log("Получены родственники для редактирования:", relatives);
 
     // Проверяем, есть ли вообще родственники в массиве
     if (!relatives || relatives.length === 0) {
-      console.log("Родственники отсутствуют, открываем форму для добавления");
+      // console.log("Родственники отсутствуют, открываем форму для добавления");
       // Если родственников нет, автоматически открываем форму для добавления
       addOneMoreRelatives();
       return;
@@ -590,30 +542,34 @@ const setEditRelative = () => {
       if (!relative) return;
 
       const relativeForStore = {
-        name: relative.relativeName || "",
-        surname: relative.relativeSurname || "",
-        patronymic: relative.relativePatronymic || "",
-        relativeTypeId: relative.relativeTypeId || 1,
-        telephone: relative.relativeTelephone || "",
+        name: relative.relativeName || relative.name || "",
+        surname: relative.relativeSurname || relative.surname || "",
+        patronymic: relative.relativePatronymic || relative.patronymic || "",
+        relativeTypeId:
+          relative.relativeTypeId || relative.relative_type_id || 1,
+        telephone: relative.telephone || relative.relativeTelephone || "",
       };
-
       // Если это существующий родственник из БД, добавляем его id
       if (relative.relativeId) {
         relativeForStore.id = relative.relativeId;
-        console.log(
-          `Установлен ID ${relative.relativeId} для родственника №${index + 1}`
-        );
+        // console.log(
+        //   `Установлен ID ${relative.relativeId} для родственника №${index + 1}`
+        // );
       }
+
+      // Лаконично прокидываем isFirstClient/isFirstRelative (camelCase или snake_case)
+      relativeForStore.isFirstClient =
+        relative.isFirstClient ?? relative.isFirstRelative;
 
       // Добавляем родственника в хранилище
       relativesStore.setRelativeOfEdit(relativeForStore);
 
       // Синхронизируем временный кэш с id+1, чтобы соответствовать ожидаемым индексам UI
       tempRelatives[index + 1] = { ...relativeForStore };
-      console.log(
-        `Родственник №${index + 1} добавлен в хранилище и временный кэш:`,
-        relativeForStore
-      );
+      // console.log(
+      //   `Родственник №${index + 1} добавлен в хранилище и временный кэш:`,
+      //   relativeForStore
+      // );
     });
 
     if (relatives.length > 0) {
@@ -622,10 +578,10 @@ const setEditRelative = () => {
       if (firstRelative) {
         relativesStore.currentRelativeId = firstRelative.id || 1;
 
-        console.log(
-          `Установлен текущий ID родственника: ${relativesStore.currentRelativeId}`
-        );
-        console.log(`Данные первого родственника:`, firstRelative);
+        // console.log(
+        //   `Установлен текущий ID родственника: ${relativesStore.currentRelativeId}`
+        // );
+        // console.log(`Данные первого родственника:`, firstRelative);
 
         // Обновляем временный кэш для текущего ID
         if (!tempRelatives[relativesStore.currentRelativeId]) {
@@ -641,10 +597,10 @@ const setEditRelative = () => {
         const currentRelativeData = getTempRelative(
           relativesStore.currentRelativeId
         );
-        console.log(
-          `Данные для формы текущего родственника:`,
-          currentRelativeData
-        );
+        // console.log(
+        //   `Данные для формы текущего родственника:`,
+        //   currentRelativeData
+        // );
 
         // Сбрасываем форму с данными текущего родственника
         resetForm({
@@ -665,7 +621,7 @@ const setEditRelative = () => {
       }
     }
   } else if (props.actionType?.type === "add") {
-    console.log("Режим добавления нового клиента, открываем форму");
+    // console.log("Режим добавления нового клиента, открываем форму");
     // Если это добавление нового клиента, автоматически открываем форму
     addOneMoreRelatives();
   }
@@ -680,61 +636,138 @@ const close = () => {
 
 // Отслеживаем изменения в семье клиента
 watch(
-  () => props.actionType?.family,
-  () => {
-    if (props.actionType?.type === "edit") {
-      // Вызываем setEditRelative только если actionType определен
-      try {
-        setEditRelative();
-      } catch (error) {
-        console.error("Ошибка при редактировании родственников:", error);
-        // В случае ошибки сбрасываем хранилище и добавляем нового родственника
-        relativesStore.reset();
+  () => props.actionType,
+  (newActionType) => {
+    // console.log(
+    //   "RELATIVES WATCHER: actionType changed",
+    //   newActionType === undefined
+    //     ? "newActionType is undefined"
+    //     : JSON.stringify(newActionType, null, 2)
+    // );
+    relativesStore.reset();
+    // console.log(
+    //   "RELATIVES WATCHER: after relativesStore.reset()",
+    //   relativesStore.relatives === undefined
+    //     ? "relativesStore.relatives is undefined"
+    //     : JSON.stringify(relativesStore.relatives, null, 2)
+    // );
+    Object.keys(tempRelatives).forEach((key) => delete tempRelatives[key]);
+
+    if (newActionType?.type === "edit") {
+      const relatives = newActionType.family?.relatives;
+      // console.log(
+      //   "RELATIVES WATCHER (edit branch): family?.relatives from props",
+      //   relatives === undefined
+      //     ? "relatives is undefined"
+      //     : JSON.stringify(relatives, null, 2)
+      // );
+      if (relatives && relatives.length > 0) {
+        relatives.forEach((relative, index) => {
+          // console.log(
+          //   `RELATIVES WATCHER (edit branch): Processing relative index ${index}`,
+          //   relative === undefined
+          //     ? "relative is undefined"
+          //     : JSON.stringify(relative, null, 2)
+          // );
+          const relativeForStore = {
+            name: relative.relativeName || relative.name || "",
+            surname: relative.relativeSurname || relative.surname || "",
+            patronymic:
+              relative.relativePatronymic || relative.patronymic || "",
+            relativeTypeId:
+              relative.relativeTypeId || relative.relative_type_id || 1,
+            telephone: relative.telephone || relative.relativeTelephone || "",
+          };
+          if (relative.relativeId) {
+            relativeForStore.id = relative.relativeId;
+          }
+          relativesStore.setRelativeOfEdit(relativeForStore);
+          // console.log(
+          //   `RELATIVES WATCHER (edit branch): after setRelativeOfEdit for index ${index}`,
+          //   relativesStore.relatives === undefined
+          //     ? "relativesStore.relatives is undefined"
+          //     : JSON.stringify(relativesStore.relatives, null, 2)
+          // );
+          tempRelatives[index + 1] = { ...relativeForStore };
+        });
+        // console.log(
+        //   "RELATIVES WATCHER (edit branch): after loop, before setting currentRelativeId",
+        //   relativesStore.relatives === undefined
+        //     ? "relativesStore.relatives is undefined"
+        //     : JSON.stringify(relativesStore.relatives, null, 2)
+        // );
+        relativesStore.currentRelativeId = 1;
+        resetForm({ values: { ...tempRelatives[1] } });
+        isEditing.value = false;
+      } else {
+        // console.log(
+        //   "RELATIVES WATCHER (edit branch): No relatives or empty, calling addOneMoreRelatives"
+        // );
         addOneMoreRelatives();
       }
     } else {
-      relativesStore.reset();
+      const familyRelatives = newActionType?.family?.relatives;
+      // console.log(
+      //   "RELATIVES WATCHER (add branch): familyRelatives from props",
+      //   familyRelatives === undefined
+      //     ? "familyRelatives is undefined"
+      //     : JSON.stringify(familyRelatives, null, 2)
+      // );
 
-      // Проверяем наличие несохраненного родственника (без id)
-      const unsavedRelative = relativesStore.relatives.find(
-        (relative) => !relative.id
-      );
-
-      // Если уже есть новый несохраненный родственник, переключаемся на него
-      if (unsavedRelative) {
-        const newRelativeIndex = relativesStore.relatives.findIndex(
-          (relative) => !relative.id
-        );
-
-        // Индекс относительный (начиная с 1)
-        const relativePosition = newRelativeIndex + 1;
-
-        // Переключаемся на этого родственника
-        relativesStore.currentRelativeId = relativePosition;
-
-        // Устанавливаем данные формы
-        resetForm({
-          values: {
-            name: unsavedRelative.name || "",
-            surname: unsavedRelative.surname || "",
-            patronymic: unsavedRelative.patronymic || "",
-            relativeTypeId: unsavedRelative.relativeTypeId || 1,
-            telephone: unsavedRelative.telephone || "",
-          },
+      if (familyRelatives && familyRelatives.length > 0) {
+        familyRelatives.forEach((relative, index) => {
+          // console.log(
+          //   `RELATIVES WATCHER (add branch): Processing familyRelative index ${index}`,
+          //   relative === undefined
+          //     ? "relative is undefined"
+          //     : JSON.stringify(relative, null, 2)
+          // );
+          const relativeForStore = {
+            name: relative.name || "",
+            surname: relative.surname || "",
+            patronymic: relative.patronymic || "",
+            relativeTypeId: relative.relativeTypeId || 1,
+            telephone: relative.telephone || "",
+          };
+          if (relative.id) {
+            relativeForStore.id = relative.id;
+          }
+          relativesStore.setRelativeOfEdit(relativeForStore);
+          // console.log(
+          //   `RELATIVES WATCHER (add branch): after setRelativeOfEdit for index ${index}`,
+          //   relativesStore.relatives === undefined
+          //     ? "relativesStore.relatives is undefined"
+          //     : JSON.stringify(relativesStore.relatives, null, 2)
+          // );
+          tempRelatives[index + 1] = { ...relativeForStore };
         });
 
-        // Активируем режим редактирования
-        isEditing.value = true;
-        nextTick().then(() => {
-          addInputMask();
-        });
+        // console.log(
+        //   "RELATIVES WATCHER (add branch): after loop, before setting currentRelativeId",
+        //   relativesStore.relatives === undefined
+        //     ? "relativesStore.relatives is undefined"
+        //     : JSON.stringify(relativesStore.relatives, null, 2)
+        // );
+        relativesStore.currentRelativeId = 1;
+        resetForm({ values: { ...tempRelatives[1] } });
+        isEditing.value = false;
       } else {
-        // Если нет несохраненного родственника, добавляем нового
+        // console.log(
+        //   "RELATIVES WATCHER (add branch): No familyRelatives or empty, calling addOneMoreRelatives"
+        // );
         addOneMoreRelatives();
       }
     }
+    // console.log(
+    //   "RELATIVES WATCHER: end of handler, final relativesStore.relatives",
+    //   relativesStore.relatives === undefined
+    //     ? "relativesStore.relatives is undefined"
+    //     : JSON.stringify(relativesStore.relatives, null, 2)
+    // );
+    // console.log("RELATIVES WATCHER: end of handler, isEditing.value", isEditing.value);
+    isInitialized.value = true;
   },
-  { immediate: true } // Запускаем watcher сразу при создании компонента
+  { immediate: true, deep: true }
 );
 
 // Отслеживаем изменения в списке родственников
@@ -750,65 +783,30 @@ watch(
 
 // Инициализация компонента
 onMounted(async () => {
-  isInitialized.value = true;
-
-  // Если родственники заданы в props, используем setEditRelative
-  if (props.actionType?.family?.relatives) {
-    setEditRelative();
-  } else if (relativesStore.relatives.length === 0) {
-    // Если родственников нет, добавляем пустого родственника
+  if (
+    !isInitialized.value &&
+    relativesStore.relatives.length === 0 &&
+    props.actionType?.type !== "edit" &&
+    !(
+      props.actionType?.family?.relatives &&
+      props.actionType.family.relatives.length > 0
+    )
+  ) {
+    // console.log("RELATIVES ONMOUNTED: Calling addOneMoreRelatives because store is empty and no preloaded data."); // Удаляем лог
     addOneMoreRelatives();
-  } else {
-    // Если родственники уже есть в store, но не из props
-    // Проверяем наличие несохраненного родственника (без id)
-    const unsavedRelative = relativesStore.relatives.find(
-      (relative) => !relative.id
-    );
-
-    // Если уже есть новый несохраненный родственник, переключаемся на него
-    if (unsavedRelative) {
-      const newRelativeIndex = relativesStore.relatives.findIndex(
-        (relative) => !relative.id
-      );
-
-      // Индекс относительный (начиная с 1)
-      const relativePosition = newRelativeIndex + 1;
-
-      // Переключаемся на этого родственника
-      relativesStore.currentRelativeId = relativePosition;
-
-      // Устанавливаем данные формы
-      resetForm({
-        values: {
-          name: unsavedRelative.name || "",
-          surname: unsavedRelative.surname || "",
-          patronymic: unsavedRelative.patronymic || "",
-          relativeTypeId: unsavedRelative.relativeTypeId || 1,
-          telephone: unsavedRelative.telephone || "",
-        },
-      });
-
-      // Активируем режим редактирования
-      isEditing.value = true;
-    } else {
-      // Иначе выбираем первого родственника
-      if (relativesStore.relatives.length > 0 && relativesStore.relatives[0]) {
-        relativesStore.currentRelativeId = relativesStore.relatives[0].id || 1;
-        resetForm({
-          values: getTempRelative(relativesStore.currentRelativeId),
-        });
-        isEditing.value = false;
-      } else {
-        // Если список родственников пуст или первый родственник недоступен
-        addOneMoreRelatives();
-      }
-    }
+  } else if (!isInitialized.value) {
+    // console.log("RELATIVES ONMOUNTED: Data likely handled by immediate watch. Store length:", relativesStore.relatives.length); // Удаляем лог
   }
-
   await nextTick();
-  if (isEditing.value) {
-    addInputMask();
-  }
+});
+
+const maskedTelephone = computed({
+  get() {
+    return maskPhone(currentTempRelative.value.telephone || "");
+  },
+  set(val) {
+    currentTempRelative.value.telephone = unmaskPhone(val);
+  },
 });
 </script>
 
@@ -995,11 +993,11 @@ onMounted(async () => {
                   :success-message="$t('zod.success')"
                   :errorSubmit="errors.telephone"
                   :maxlength="relativesConstants.MAX_FIELD_TELEPHONE_NUMBERS"
-                  ref="telephoneMask"
-                  v-model="currentTempRelative.telephone"
+                  v-model="maskedTelephone"
                 ></ui-fields-input>
               </div>
               <div
+                v-if="!relativeSections.active.isFirstClient"
                 class="card-table__delete"
                 @click="
                   deleteRelative(
@@ -1015,9 +1013,15 @@ onMounted(async () => {
                   class="card-table__delete-img"
                 />
               </div>
-              {{
-                relativeSections.active.id || relativesStore.currentRelativeId
-              }}
+              <img
+                v-if="relativeSections.active.isFirstClient"
+                src="/icons/lock_icon.svg"
+                alt=""
+                class="card-table__lock-img"
+                v-tooltip="
+                  'Так как это первый (основной) родственник, то он не может быть удален'
+                "
+              />
             </div>
           </div>
           <div
@@ -1265,6 +1269,11 @@ onMounted(async () => {
       :disabled {
       }
     }
+  }
+
+  &__lock-img {
+    width: 2.3rem;
+    height: 2.3rem;
   }
 }
 

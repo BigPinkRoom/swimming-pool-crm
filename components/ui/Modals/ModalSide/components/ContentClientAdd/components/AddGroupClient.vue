@@ -17,8 +17,6 @@ import { formatDate } from "@/helpers/formatDate";
 
 import AbonementEntity from "@/entities/abonementEntity";
 
-const { createFamilyModelResponse } = new AbonementEntity();
-
 import vRadioButton from "@/components/ui/RadioButtons/mainRadioButton";
 import vCloseButton from "@/components/ui/Buttons/ButtonClose.vue";
 import CardTable from "@/components/Common/CardTable.vue";
@@ -69,6 +67,7 @@ const inputData = reactive([
  * @type {Object} Временное хранилище данных клиентов
  */
 const tempClients = reactive({});
+
 const uuidV4 = uuid.v4();
 const showOneMoreClient = ref(true);
 const birthdayDate = ref(null);
@@ -148,15 +147,25 @@ const setEditClient = () => {
         clientForStore.id = client.clientId;
       }
 
+      // Прокидываем isFirstClient (camelCase или snake_case)
+      if (client.isFirstClient !== undefined) {
+        clientForStore.isFirstClient = client.isFirstClient;
+      } else if (client.is_first_client !== undefined) {
+        clientForStore.isFirstClient = client.is_first_client;
+      }
+
       clientsStore.setClientOfEdit(clientForStore);
       tempClients[index + 1] = { ...clientForStore };
     });
 
     if (clients.length > 0) {
       clientsStore.currentClientId = 1;
-      // Если клиенты есть, скрываем форму редактирования
-      isEditing.value = false;
+      // Сначала сбрасываем форму на данные первого клиента
       resetForm({ values: { ...tempClients[1] } });
+      // Затем выключаем режим редактирования
+      nextTick(() => {
+        isEditing.value = false;
+      });
     } else {
       // Если клиентов нет, добавляем пустого и показываем форму
       addOneMoreClients();
@@ -251,6 +260,7 @@ const changeEdit = async (index) => {
  */
 const handleAddClientButtonClick = async () => {
   // Проверяем, находимся ли мы в режиме редактирования
+
   if (isEditing.value) {
     // Определяем, редактируем мы существующего клиента или нового
     const isExistingClient =
@@ -497,23 +507,88 @@ const deleteClient = async (index) => {
 };
 
 watch(
-  () => props.actionType.family,
-  () => {
-    if (props.actionType.type === "edit") {
-      setEditClient();
+  () => props.actionType,
+  (newActionType) => {
+    clientsStore.reset();
+    Object.keys(tempClients).forEach((key) => delete tempClients[key]);
+
+    if (newActionType?.type === "edit") {
+      const clients = newActionType.family?.clients;
+      if (clients && clients.length > 0) {
+        clients.forEach((client, index) => {
+          const clientForStore = {
+            name: client.clientName || "",
+            surname: client.clientSurname || "",
+            gender: client.clientGender || 0,
+            birthday: formatDate(client.clientBirthday) || "",
+            patronymic: client.clientPatronymic || "",
+          };
+          if (client.clientId) {
+            clientForStore.id = client.clientId;
+          }
+          if (client.isFirstClient !== undefined) {
+            clientForStore.isFirstClient = client.isFirstClient;
+          } else if (client.is_first_client !== undefined) {
+            clientForStore.isFirstClient = client.is_first_client;
+          }
+          clientsStore.setClientOfEdit(clientForStore);
+          tempClients[index + 1] = { ...clientForStore };
+        });
+        clientsStore.currentClientId = 1;
+        resetForm({ values: { ...tempClients[1] } });
+        isEditing.value = false;
+      } else {
+        addOneMoreClients();
+      }
     } else {
-      clientsStore.reset();
-      // При создании новой семьи сразу добавляем пустого клиента
-      addOneMoreClients();
+      const familyClients = newActionType?.family?.clients;
+      if (familyClients && familyClients.length > 0) {
+        familyClients.forEach((client, index) => {
+          const clientForStore = {
+            name: client.name || "",
+            surname: client.surname || "",
+            patronymic: client.patronymic || "",
+            birthday: formatDate(client.birthday) || "",
+            gender: client.gender === undefined ? null : client.gender,
+          };
+          if (client.id) {
+            clientForStore.id = client.id;
+          }
+          if (client.isFirstClient !== undefined) {
+            clientForStore.isFirstClient = client.isFirstClient;
+          } else if (client.is_first_client !== undefined) {
+            clientForStore.isFirstClient = client.is_first_client;
+          }
+
+          clientsStore.setClientOfEdit(clientForStore);
+          tempClients[index + 1] = { ...clientForStore };
+        });
+
+        clientsStore.currentClientId = 1;
+        resetForm({ values: { ...tempClients[1] } });
+        isEditing.value = false;
+      } else {
+        addOneMoreClients();
+      }
     }
   },
-  { immediate: true } // Добавляем immediate: true для немедленного выполнения при монтировании
+  { immediate: true, deep: true }
 );
 
 // Инициализация компонента при необходимости
 onMounted(() => {
-  // Если список клиентов пуст и не в режиме редактирования, добавляем пустого клиента
-  if (clientsStore.clients.length === 0 && props.actionType?.type !== "edit") {
+  // Проверяем, есть ли предзагруженные клиенты из props (например, из поиска)
+  const hasPreloadedClients =
+    props.actionType?.family?.clients &&
+    props.actionType.family.clients.length > 0;
+
+  // Если список клиентов пуст, И это не режим редактирования существующей семьи,
+  // И НЕТ предзагруженных клиентов, ТОГДА добавляем пустого клиента для новой семьи.
+  if (
+    clientsStore.clients.length === 0 &&
+    props.actionType?.type !== "edit" &&
+    !hasPreloadedClients
+  ) {
     addOneMoreClients();
   }
 });
@@ -698,14 +773,28 @@ onMounted(() => {
                 class="card-table__delete"
                 @click="deleteClient(clientsStore.currentClientId)"
               >
-                <div class="card-table__delete-text">Удалить</div>
+                <div
+                  class="card-table__delete-text"
+                  v-if="!clientSections.active.isFirstClient"
+                >
+                  Удалить
+                </div>
                 <img
+                  v-if="!clientSections.active.isFirstClient"
                   src="/icons/delete_icon.svg"
                   alt=""
                   class="card-table__delete-img"
                 />
-                {{ clientSections.active.id }}
               </div>
+              <img
+                v-if="clientSections.active.isFirstClient"
+                src="/icons/lock_icon.svg"
+                alt=""
+                class="card-table__lock-img"
+                v-tooltip="
+                  'Так как это первый (основной) клиент, то он не может быть удален'
+                "
+              />
             </div>
           </div>
           <div
@@ -918,6 +1007,10 @@ onMounted(() => {
   }
 
   &__delete {
+    position: relative;
+    right: 8px;
+    top: -2px;
+
     display: flex;
 
     cursor: pointer;
@@ -954,6 +1047,11 @@ onMounted(() => {
       :disabled {
       }
     }
+  }
+
+  &__lock-img {
+    width: 2.3rem;
+    height: 2.3rem;
   }
 }
 
