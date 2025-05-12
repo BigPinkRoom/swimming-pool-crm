@@ -19,6 +19,7 @@
     "@vee-validate/nuxt": "^4.15.0",
     "@vee-validate/zod": "^4.15.0",
     "cleave.js": "^1.6.0",
+    "floating-vue": "^5.2.2",
     "lodash-es": "^4.17.21",
     "nuxt": "^3.15.4",
     "pinia": "^2.3.0",
