@@ -30,6 +30,7 @@ const messageStore = useMessageStore();
   &__infobar {
     position: fixed;
     top: 5.1rem;
+    z-index: 20;
 
     width: 100%;
   }
