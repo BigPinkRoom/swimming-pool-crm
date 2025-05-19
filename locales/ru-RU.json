@@ -237,6 +237,12 @@
           }
         },
         "fields": {}
+      },
+      "notifications": {
+        "familyAdded": "Семья успешно добавлена",
+        "Update:FamilyUpdatedSuccess": "Данные семьи успешно обновлены",
+        "Update:NoChangesDetected": "Не было произведено никаких изменений",
+        "familyError": "Произошла ошибка при сохранении данных семьи"
       }
     }
   },
@@ -276,5 +282,11 @@
     "searchString": "Разрешены только буквы, цифры, символы: - . +",
     "dateFormat": "Необходим формат дд.мм.гггг",
     "invalidDate": "Неверная дата"
+  },
+  "abonementsErrors": {
+    "Abonements:ClientOrRelativeRequired": "Необходимо указать хотя бы одного клиента и родственника",
+    "Abonements:relativeRequired": "Невозможно создать клиента без родственника",
+    "Abonements:clientRequired": "Невозможно создать родственника без клиента",
+    "Abonements:RelativeRequiredForClient": "Невозможно оставить клиента без родственника'"
   }
 }

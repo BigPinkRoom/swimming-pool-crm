@@ -220,6 +220,11 @@
           }
         },
         "fields": {}
+      },
+      "notifications": {
+        "familyAdded": "Family successfully added",
+        "familyUpdated": "Family data successfully updated",
+        "familyError": "An error occurred while saving family data"
       }
     }
   },
