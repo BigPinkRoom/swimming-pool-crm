@@ -3,7 +3,7 @@ import { SignUpPage } from "./pom/SignUpPage.js";
 import { SignInPage } from "./pom/SignInPage.js";
 import { fakerEn, fakerRu } from "./utils/dataHelpers.js";
 
-test.describe("Аутентификация", () => {
+test.describe.serial("Аутентификация", () => {
   const RuRandomFirstName = fakerRu.person.firstName();
   const RuRandomLastName = fakerRu.person.lastName();
   const EnRandomFirstName = fakerEn.person.firstName();
@@ -14,20 +14,7 @@ test.describe("Аутентификация", () => {
   });
   const randomPassword = fakerEn.internet.password({ length: 12 }) + "A!1a";
 
-  test("Проверка регистрации нового пользователя", async ({ page }) => {
-    const signUpPage = new SignUpPage(page);
-    await signUpPage.navigate();
-    await signUpPage.register(
-      randomEmail,
-      randomPassword,
-      randomPassword,
-      RuRandomFirstName,
-      RuRandomLastName,
-      RuRandomFirstName
-    );
-  });
-
-  test("Проверка авторизации", async ({ page }) => {
+  test("Проверка регистрации и авторизации", async ({ page }) => {
     const signUpPage = new SignUpPage(page);
     await signUpPage.navigate();
     await signUpPage.register(

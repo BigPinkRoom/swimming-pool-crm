@@ -52,11 +52,9 @@ export class AbonementPage {
     return this.page
       .getByRole("group")
       .filter({
-        hasText:
-          "Дети Имя / фамилия Возраст Пол Действия ФамилияВалидация успешнаИмяВалидация усп",
+        hasText: "Дети",
       })
-      .locator("img")
-      .nth(1);
+      .locator(".card-table__actions-img--ok");
   }
 
   // Родительские поля
@@ -100,8 +98,7 @@ export class AbonementPage {
     return this.page
       .getByRole("group")
       .filter({ hasText: "Родственники" })
-      .locator("img")
-      .nth(1);
+      .locator(".card-table__actions-img--ok");
   }
 
   //  Поля абонементов
@@ -130,14 +127,32 @@ export class AbonementPage {
     return this.page
       .locator(".client-main__fieldset")
       .filter({ hasText: "Дети" })
-      .locator(".card-table__actions--edit");
+      .locator(".card-table__actions--edit")
+      .nth(0);
+  }
+
+  get _editClientButtonSecondary() {
+    return this.page
+      .locator(".client-main__fieldset")
+      .filter({ hasText: "Дети" })
+      .locator(".card-table__actions--edit")
+      .nth(0);
   }
 
   get _editRelativeButton() {
     return this.page
       .locator(".client-main__fieldset")
       .filter({ hasText: "Родственники" })
-      .locator(".card-table__actions--edit");
+      .locator(".card-table__actions--edit")
+      .nth(0);
+  }
+
+  get _editRelativeButtonSecondary() {
+    return this.page
+      .locator(".client-main__fieldset")
+      .filter({ hasText: "Родственники" })
+      .locator(".card-table__actions--edit")
+      .nth(0);
   }
   /**
    * Переходит на страницу входа.
@@ -215,22 +230,22 @@ export class AbonementPage {
     await this._editClientButton.click();
   }
 
+  async clickEditClientSecondary() {
+    await this._editClientButtonSecondary.click();
+  }
+
   async clickEditRelative() {
     await this._editRelativeButton.click();
   }
 
+  async clickEditRelativeSecondary() {
+    await this._editRelativeButtonSecondary.click();
+  }
   async closeEditModal() {
-    const cancelButton = this.page.locator(
-      'aside footer button:has-text("Cancel"), aside footer button:has-text("Отмена")'
-    );
-    const closeIcon = this.page.locator(
-      'aside header button[class*="close"], aside header button > svg[class*="close"], aside header button[aria-label*="Закрыть"]'
-    );
+    const cancelButton = this.page.getByRole("button", { name: "Cancel" });
 
     if (await cancelButton.isVisible()) {
       await cancelButton.click();
-    } else if (await closeIcon.isVisible()) {
-      await closeIcon.click();
     } else {
       console.warn(
         "Кнопка закрытия модального окна редактирования не найдена."

@@ -5,6 +5,7 @@ import path from "path";
 dotenv.config({ path: path.resolve(".env") });
 
 export default defineConfig({
+  timeout: 60000,
   testDir: "./tests/end-to-end", // Директория, где будут находиться тесты
   fullyParallel: true, // Запускать тесты параллельно
   forbidOnly: !!process.env.CI, // Запретить использование .only в CI
@@ -12,7 +13,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined, // Ограничить количество воркеров в CI
   reporter: "html", // Использовать HTML-отчет для удобства
   use: {
-    headless: false,
+    headless: true,
     baseURL: "http://localhost:3000", // URL вашего приложения
     trace: "on-first-retry", // Включить трассировку для отладки
   },
