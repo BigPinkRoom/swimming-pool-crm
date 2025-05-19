@@ -476,6 +476,7 @@ onMounted(async () => {
                 class="abonements-table__body-cell abonements-table__body-cell--settings"
               >
                 <img
+                  class="abonements-table__ellipis-img"
                   src="public/icons/more_table_settings.svg"
                   @click="openModalEdit(family)"
                 />

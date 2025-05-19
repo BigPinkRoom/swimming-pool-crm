@@ -908,13 +908,13 @@ const maskedTelephone = computed({
                 <img
                   src="/icons/arrow_down_icon.svg"
                   alt=""
-                  class="card-table__actions-img"
+                  class="card-table__actions-img card-table__actions-img--arrow"
                   @click="toggleEditing(false)"
                 />
                 <img
                   src="/icons/ok_icon.svg"
                   alt=""
-                  class="card-table__actions-img"
+                  class="card-table__actions-img card-table__actions-img--ok"
                   @click="
                     addRelativeToStore(
                       relativeSections.active.id ||
