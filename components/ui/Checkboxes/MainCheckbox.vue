@@ -3,10 +3,10 @@
     <label :for="id">
       <input
         :id="id"
-        :checked="checked"
-        :name="name"
         class="checkbox__input"
         type="checkbox"
+        :checked="checked"
+        :name="name"
         @input="updateValue($event.target.checked)"
       />
 

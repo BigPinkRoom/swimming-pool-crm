@@ -838,9 +838,9 @@ const maskedTelephone = computed({
             </div>
           </div>
           <div
-            class="card-table__table-tr"
             v-for="(item, index) in relativeSections.before"
             :key="item.id || 'before-' + (index + 1)"
+            class="card-table__table-tr"
           >
             <div class="card-table__table-td card-table--name">
               {{ item.name }}
@@ -854,17 +854,17 @@ const maskedTelephone = computed({
                 <img
                   class="card-table__actions--edit"
                   src="/icons/edit.svg"
+                  alt=""
                   @click="
                     changeEdit(
                       item.id || relativeSections.before.indexOf(item) + 1
                     )
                   "
-                  alt=""
                 />
               </div>
             </div>
           </div>
-          <div class="card-table__table-tr" v-if="relativeSections.active">
+          <div v-if="relativeSections.active" class="card-table__table-tr">
             <div v-if="!isEditing" class="card-table__table-tr">
               <div class="card-table__table-td card-table--name">
                 {{ relativeSections.active.name }}
@@ -882,13 +882,13 @@ const maskedTelephone = computed({
                   <img
                     class="card-table__actions--edit"
                     src="/icons/edit.svg"
+                    alt=""
                     @click="
                       changeEdit(
                         relativeSections.active.id ||
                           relativesStore.currentRelativeId
                       )
                     "
-                    alt=""
                   />
                 </div>
               </div>
@@ -926,74 +926,74 @@ const maskedTelephone = computed({
               <div class="card-table__field">
                 <ui-fields-input
                   :id="`RelativeSurname_${uuidV4}`"
+                  v-model="currentTempRelative.surname"
                   type="text"
+                  name="surname"
                   :title="
                     $t(
                       'forms.client.add.fieldsets.relatives.fields.surname.label'
                     )
                   "
-                  name="surname"
                   :success-message="$t('zod.success')"
                   :errorSubmit="errors.surname"
-                  v-model="currentTempRelative.surname"
                 ></ui-fields-input>
               </div>
               <div class="card-table__field">
                 <ui-fields-input
                   :id="`relativeName_${uuidV4}`"
+                  v-model="currentTempRelative.name"
                   type="text"
+                  name="name"
                   :title="
                     $t('forms.client.add.fieldsets.relatives.fields.name.label')
                   "
-                  name="name"
                   :success-message="$t('zod.success')"
                   :errorSubmit="errors.name"
-                  v-model="currentTempRelative.name"
                 ></ui-fields-input>
               </div>
               <div class="card-table__field">
                 <ui-fields-input
                   :id="`relativePatronymic_${uuidV4}`"
+                  v-model="currentTempRelative.patronymic"
                   type="text"
+                  name="patronymic"
                   :title="
                     $t(
                       'forms.client.add.fieldsets.relatives.fields.patronymic.label'
                     )
                   "
-                  name="patronymic"
                   :success-message="$t('zod.success')"
                   :errorSubmit="errors.patronymic"
-                  v-model="currentTempRelative.patronymic"
                 ></ui-fields-input>
               </div>
               <div class="card-table__field">
                 <ui-selects-select
                   :id="`relativeType_${uuidV4}`"
+                  v-model="currentTempRelative.relativeTypeId"
                   type="text"
+                  name="type"
                   :title="
                     $t('forms.client.add.fieldsets.relatives.fields.type.label')
                   "
-                  name="type"
                   :options-list="relativesStore.relativesTypes"
                   :success-message="$t('zod.success')"
                   :errorSubmit="errors.type"
-                  v-model="currentTempRelative.relativeTypeId"
                 ></ui-selects-select>
               </div>
               <div class="card-table__field card-table__field--telephone">
                 <ui-fields-input
                   :id="`relativeTelephone_${uuidV4}`"
+                  v-model="maskedTelephone"
                   type="text"
+                  name="telephone"
                   :title="
                     $t(
                       'forms.client.add.fieldsets.relatives.fields.telephone.label'
                     )
                   "
-                  name="telephone"
                   :success-message="$t('zod.success')"
                   :errorSubmit="errors.telephone"
                   :maxlength="relativesConstants.MAX_FIELD_TELEPHONE_NUMBERS"
-                  v-model="maskedTelephone"
                 ></ui-fields-input>
               </div>
               <div
@@ -1015,19 +1015,19 @@ const maskedTelephone = computed({
               </div>
               <img
                 v-if="relativeSections.active.isFirstClient"
-                src="/icons/lock_icon.svg"
-                alt=""
-                class="card-table__lock-img"
                 v-tooltip="
                   'Так как это первый (основной) родственник, то он не может быть удален'
                 "
+                src="/icons/lock_icon.svg"
+                alt=""
+                class="card-table__lock-img"
               />
             </div>
           </div>
           <div
-            class="card-table__table-tr"
             v-for="(item, index) in relativeSections.after"
             :key="item.id || 'after-' + (index + 1)"
+            class="card-table__table-tr"
           >
             <div class="card-table__table-td card-table--name">
               {{ item.name }}
@@ -1041,26 +1041,26 @@ const maskedTelephone = computed({
                 <img
                   class="card-table__actions--edit"
                   src="/icons/edit.svg"
+                  alt=""
                   @click="
                     changeEdit(
                       item.id || relativeSections.before.length + 1 + index + 1
                     )
                   "
-                  alt=""
                 />
               </div>
             </div>
           </div>
-          <tr class="card-table__tr-add" v-if="showOneMoreRelative">
+          <tr v-if="showOneMoreRelative" class="card-table__tr-add">
             <div class="card-table__add">
               <button
                 class="card-table__button card-table__button--add"
-                @click.prevent="handleAddRelativeButtonClick"
                 :disabled="
                   $services.relatives.isMaxRelativesLimitReached(
                     relativesStore.relatives
                   )
                 "
+                @click.prevent="handleAddRelativeButtonClick"
               >
                 {{ addRelativeText }}
               </button>
@@ -1069,7 +1069,7 @@ const maskedTelephone = computed({
         </div>
       </template>
       <template #footer>
-        <div class="client-main__close" v-if="closeButton">
+        <div v-if="closeButton" class="client-main__close">
           <v-close-button @click="close" />
         </div>
       </template>

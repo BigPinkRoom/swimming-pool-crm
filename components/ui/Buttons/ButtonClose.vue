@@ -1,5 +1,5 @@
 <template>
-  <button :id="id" :class="styleType" class="button" type="button" @click="clickHandler"></button>
+  <button :id="id" class="button" type="button" :class="styleType" @click="clickHandler"></button>
 </template>
 
 <script>

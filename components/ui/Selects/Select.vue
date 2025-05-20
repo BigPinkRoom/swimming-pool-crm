@@ -63,15 +63,15 @@ const uuidV4 = uuid.v4();
 
 <template>
   <div class="select" :class="{ 'select--disabled': props.disabled }">
-    <label :for="id" class="select__title" :class="titleClass">
+    <label class="select__title" :for="id" :class="titleClass">
       {{ title }}
     </label>
     <select
       :id="id"
-      :name="name"
-      class="select__field"
-      :class="fieldClass"
       v-model="value"
+      class="select__field"
+      :name="name"
+      :class="fieldClass"
       :disabled="props.disabled"
     >
       <option v-if="placeholder" value="" disabled>
@@ -80,9 +80,9 @@ const uuidV4 = uuid.v4();
       <option
         v-for="option in optionsList"
         :key="`${option.value}_${uuidV4}`"
+        class="select__option"
         :disabled="option.disabled"
         :value="option.value"
-        class="select__option"
       >
         {{ option.text }}
       </option>

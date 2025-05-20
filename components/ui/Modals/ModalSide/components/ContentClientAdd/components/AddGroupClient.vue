@@ -627,9 +627,9 @@ onMounted(() => {
             </div>
           </div>
           <div
-            class="card-table__table-tr"
             v-for="(item, index) in clientSections.before"
             :key="index"
+            class="card-table__table-tr"
           >
             <div class="card-table__table-td card-table--name">
               {{ item.name }}
@@ -639,20 +639,20 @@ onMounted(() => {
               {{ calculateAge(item.birthday) }}
             </div>
             <div class="card-table__table-td card-table--gender">
-              <img :src="getGenderImage(item.gender)" alt="" />
+              <img alt="" :src="getGenderImage(item.gender)" />
             </div>
             <div class="card-table__table-td card-table--actions">
               <div class="card-table__actions">
                 <img
                   class="card-table__actions--edit"
                   src="/icons/edit.svg"
-                  @click="changeEdit(index + 1)"
                   alt=""
+                  @click="changeEdit(index + 1)"
                 />
               </div>
             </div>
           </div>
-          <div class="card-table__table-tr" v-if="clientSections.active">
+          <div v-if="clientSections.active" class="card-table__table-tr">
             <div v-if="!isEditing" class="card-table__table-tr">
               <div class="card-table__table-td card-table--name">
                 {{ clientSections.active.name }}
@@ -665,8 +665,8 @@ onMounted(() => {
               </div>
               <div class="card-table__table-td card-table--gender">
                 <img
-                  :src="getGenderImage(clientSections.active.gender)"
                   alt=""
+                  :src="getGenderImage(clientSections.active.gender)"
                 />
               </div>
               <div class="card-table__table-td card-table--actions">
@@ -674,8 +674,8 @@ onMounted(() => {
                   <img
                     class="card-table__actions--edit"
                     src="/icons/edit.svg"
-                    @click="changeEdit(clientsStore.currentClientId)"
                     alt=""
+                    @click="changeEdit(clientsStore.currentClientId)"
                   />
                 </div>
               </div>
@@ -708,74 +708,74 @@ onMounted(() => {
               <div class="card-table__field">
                 <ui-fields-input
                   :id="`clientSurname_${uuidV4}`"
+                  v-model="currentTempClient.surname"
                   type="text"
+                  name="surname"
                   :title="
                     $t(`forms.client.add.fieldsets.client.fields.surname.label`)
                   "
-                  name="surname"
                   :success-message="$t('zod.success')"
                   :errorSubmit="errors.surname"
-                  v-model="currentTempClient.surname"
                 ></ui-fields-input>
               </div>
               <div class="card-table__field">
                 <ui-fields-input
                   :id="`clientName_${uuidV4}`"
+                  v-model="currentTempClient.name"
                   type="text"
+                  name="name"
                   :title="
                     $t(`forms.client.add.fieldsets.client.fields.name.label`)
                   "
-                  name="name"
                   :success-message="$t('zod.success')"
                   :errorSubmit="errors.name"
-                  v-model="currentTempClient.name"
                 ></ui-fields-input>
               </div>
               <div class="card-table__field">
                 <ui-fields-input
                   :id="`clientPatronymic_${uuidV4}`"
+                  v-model="currentTempClient.patronymic"
                   type="text"
+                  name="patronymic"
                   :title="
                     $t(
                       `forms.client.add.fieldsets.client.fields.patronymic.label`
                     )
                   "
-                  name="patronymic"
                   :success-message="$t('zod.success')"
                   :errorSubmit="errors.patronymic"
-                  v-model="currentTempClient.patronymic"
                 ></ui-fields-input>
               </div>
               <div class="card-table__field">
                 <ui-fields-input
                   :id="`clientBirthday_${uuidV4}`"
+                  ref="birthdayDate"
+                  v-model="currentTempClient.birthday"
                   type="text"
+                  name="birthday"
                   :title="
                     $t(
                       `forms.client.add.fieldsets.client.fields.birthday.label`
                     )
                   "
-                  name="birthday"
                   :success-message="$t('zod.success')"
                   :errorSubmit="errors.birthday"
-                  ref="birthdayDate"
-                  v-model="currentTempClient.birthday"
                   :maxlength="clientsConstants.MAX_FIELD_BIRTHDAY_NUMBERS"
                 ></ui-fields-input>
               </div>
               <v-radio-button
-                name="genderType"
-                :input-data="inputData"
-                class="card-table__radio"
                 v-model="currentTempClient.gender"
+                name="genderType"
+                class="card-table__radio"
+                :input-data="inputData"
               />
               <div
                 class="card-table__delete"
                 @click="deleteClient(clientsStore.currentClientId)"
               >
                 <div
-                  class="card-table__delete-text"
                   v-if="!clientSections.active.isFirstClient"
+                  class="card-table__delete-text"
                 >
                   Удалить
                 </div>
@@ -788,19 +788,19 @@ onMounted(() => {
               </div>
               <img
                 v-if="clientSections.active.isFirstClient"
-                src="/icons/lock_icon.svg"
-                alt=""
-                class="card-table__lock-img"
                 v-tooltip="
                   'Так как это первый (основной) клиент, то он не может быть удален'
                 "
+                src="/icons/lock_icon.svg"
+                alt=""
+                class="card-table__lock-img"
               />
             </div>
           </div>
           <div
-            class="card-table__table-tr"
             v-for="(item, index) in clientSections.after"
             :key="index"
+            class="card-table__table-tr"
           >
             <div class="card-table__table-td card-table--name">
               {{ item.name }}
@@ -810,31 +810,31 @@ onMounted(() => {
               {{ calculateAge(item.birthday) }}
             </div>
             <div class="card-table__table-td card-table--gender">
-              <img :src="getGenderImage(item.gender)" alt="" />
+              <img alt="" :src="getGenderImage(item.gender)" />
             </div>
             <div class="card-table__table-td card-table--actions">
               <div class="card-table__actions">
                 <img
                   class="card-table__actions--edit"
                   src="/icons/edit.svg"
+                  alt=""
                   @click="
                     changeEdit(clientSections.before.length + 1 + index + 1)
                   "
-                  alt=""
                 />
               </div>
             </div>
           </div>
-          <tr class="card-table__tr-add" v-if="showOneMoreClient">
+          <tr v-if="showOneMoreClient" class="card-table__tr-add">
             <div class="card-table__add">
               <button
                 class="card-table__button card-table__button--add"
-                @click.prevent="handleAddClientButtonClick"
                 :disabled="
                   $services.clients.isMaxClientsLimitReached(
                     clientsStore.clients
                   )
                 "
+                @click.prevent="handleAddClientButtonClick"
               >
                 {{ addClientText }}
               </button>
@@ -843,7 +843,7 @@ onMounted(() => {
         </div>
       </template>
       <template #footer>
-        <div class="client-main__close" v-if="closeButton">
+        <div v-if="closeButton" class="client-main__close">
           <v-close-button @click="close" />
         </div>
       </template>

@@ -145,12 +145,12 @@ const selectFamilyAndEmit = async (element) => {
             <div class="card-table__field">
               <ui-fields-input
                 :id="`clientName_${uuidV4}`"
+                v-model="search"
                 type="text"
                 title="Поиск по ФИО и по номеру телефона"
                 name="search"
                 :success-message="$t('zod.success')"
                 :errorSubmit="errors.search"
-                v-model="search"
                 @input="searchFamily"
               ></ui-fields-input>
             </div>
@@ -163,15 +163,15 @@ const selectFamilyAndEmit = async (element) => {
           :class="{ 'is-collapsing': isListCollapsing }"
         >
           <div
-            class="card-table__table-block"
             v-for="item in searchResult"
             :key="item.id"
+            class="card-table__table-block"
             @click="selectFamilyAndEmit(item)"
           >
             <div
-              class="card-table__table-block-title"
               v-for="element_relative in item.relatives"
               :key="element_relative.id"
+              class="card-table__table-block-title"
             >
               <span class="card-table__table-block--semi-bold"
                 >{{ getRelativeType(element_relative.relative_type_id) }}:</span
@@ -184,9 +184,9 @@ const selectFamilyAndEmit = async (element) => {
               >
             </div>
             <div
-              class="card-table__table-block-title"
               v-for="element_client in item.clients"
               :key="element_client.id"
+              class="card-table__table-block-title"
             >
               <span class="card-table__table-block--semi-bold"
                 >{{ getGender(element_client.gender) }}:</span
@@ -198,7 +198,7 @@ const selectFamilyAndEmit = async (element) => {
         </transition-group>
       </template>
       <template #footer>
-        <div class="client-main__close" v-if="closeButton">
+        <div v-if="closeButton" class="client-main__close">
           <v-close-button @click="close" />
         </div>
       </template>

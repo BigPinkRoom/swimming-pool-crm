@@ -42,7 +42,7 @@ const handleFamilySelectedFromSearch = (familyData) => {
 </script>
 
 <template>
-  <form class="client-main" ref="formRef">
+  <form ref="formRef" class="client-main">
     <div class="client-main__item">
       <fieldset-search
         :action-type="actionType"
@@ -79,9 +79,9 @@ const handleFamilySelectedFromSearch = (familyData) => {
 
     <div class="client-main__item">
       <fieldset-abonements
+        v-if="showAbonements"
         ref="fieldsetAbonements"
         :action-type="actionType"
-        v-if="showAbonements"
       />
     </div>
   </form>

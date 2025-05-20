@@ -215,6 +215,8 @@ onMounted(async () => {
               №
               <img
                 class="abonements-table__sort-icon"
+                src="public/icons/arrow_down_icon-long.svg"
+                alt="arrow"
                 :class="{
                   'abonements-table__sort-icon--asc':
                     columnSortOrdersMap['abonements.abonement_id'] === 'asc',
@@ -223,8 +225,6 @@ onMounted(async () => {
                   'abonements-table__sort-icon--hidden':
                     !columnSortOrdersMap['abonements.abonement_id'],
                 }"
-                src="public/icons/arrow_down_icon-long.svg"
-                alt="arrow"
               />
             </div>
             <div
@@ -234,6 +234,8 @@ onMounted(async () => {
               Д.Акт
               <img
                 class="abonements-table__sort-icon"
+                src="public/icons/arrow_down_icon-long.svg"
+                alt="arrow"
                 :class="{
                   'abonements-table__sort-icon--asc':
                     columnSortOrdersMap['abonements.date_start'] === 'asc',
@@ -242,8 +244,6 @@ onMounted(async () => {
                   'abonements-table__sort-icon--hidden':
                     !columnSortOrdersMap['abonements.date_start'],
                 }"
-                src="public/icons/arrow_down_icon-long.svg"
-                alt="arrow"
               />
             </div>
             <div
@@ -253,6 +253,8 @@ onMounted(async () => {
               Д.Зав
               <img
                 class="abonements-table__sort-icon"
+                src="public/icons/arrow_down_icon-long.svg"
+                alt="arrow"
                 :class="{
                   'abonements-table__sort-icon--asc':
                     columnSortOrdersMap['abonements.date_end'] === 'asc',
@@ -261,8 +263,6 @@ onMounted(async () => {
                   'abonements-table__sort-icon--hidden':
                     !columnSortOrdersMap['abonements.date_end'],
                 }"
-                src="public/icons/arrow_down_icon-long.svg"
-                alt="arrow"
               />
             </div>
             <div
@@ -273,6 +273,8 @@ onMounted(async () => {
               Всг.
               <img
                 class="abonements-table__sort-icon"
+                src="public/icons/arrow_down_icon-long.svg"
+                alt="arrow"
                 :class="{
                   'abonements-table__sort-icon--asc':
                     columnSortOrdersMap['abonements.visits_quantity'] === 'asc',
@@ -282,8 +284,6 @@ onMounted(async () => {
                   'abonements-table__sort-icon--hidden':
                     !columnSortOrdersMap['abonements.visits_quantity'],
                 }"
-                src="public/icons/arrow_down_icon-long.svg"
-                alt="arrow"
               />
             </div>
             <div
@@ -294,6 +294,8 @@ onMounted(async () => {
               Ост.
               <img
                 class="abonements-table__sort-icon"
+                src="public/icons/arrow_down_icon-long.svg"
+                alt="arrow"
                 :class="{
                   'abonements-table__sort-icon--asc':
                     columnSortOrdersMap['abonements.visits_left'] === 'asc',
@@ -302,8 +304,6 @@ onMounted(async () => {
                   'abonements-table__sort-icon--hidden':
                     !columnSortOrdersMap['abonements.visits_left'],
                 }"
-                src="public/icons/arrow_down_icon-long.svg"
-                alt="arrow"
               />
             </div>
             <div
@@ -313,6 +313,8 @@ onMounted(async () => {
               Ст.
               <img
                 class="abonements-table__sort-icon"
+                src="public/icons/arrow_down_icon-long.svg"
+                alt="arrow"
                 :class="{
                   'abonements-table__sort-icon--asc':
                     columnSortOrdersMap['abonements.status_id'] === 'asc',
@@ -321,8 +323,6 @@ onMounted(async () => {
                   'abonements-table__sort-icon--hidden':
                     !columnSortOrdersMap['abonements.status_id'],
                 }"
-                src="public/icons/arrow_down_icon-long.svg"
-                alt="arrow"
               />
             </div>
             <div
@@ -332,6 +332,8 @@ onMounted(async () => {
               ФИО ребёнка
               <img
                 class="abonements-table__sort-icon abonements-table__sort-icon--abosolute"
+                src="public/icons/arrow_down_icon-long.svg"
+                alt="arrow"
                 :class="{
                   'abonements-table__sort-icon--asc':
                     columnSortOrdersMap['clients.surname'] === 'asc',
@@ -340,8 +342,6 @@ onMounted(async () => {
                   'abonements-table__sort-icon--hidden':
                     !columnSortOrdersMap['clients.surname'],
                 }"
-                src="public/icons/arrow_down_icon-long.svg"
-                alt="arrow"
               />
             </div>
           </div>
@@ -359,10 +359,10 @@ onMounted(async () => {
             >
               <ui-fields-input-table-filter
                 :id="`abonementId_${uuidV4}`"
+                v-model="filters.abonementId"
                 class="abonements-table__field"
                 type="number"
                 name="abonementId"
-                v-model="filters.abonementId"
                 @update:modelValue="onFilterChange"
               ></ui-fields-input-table-filter>
             </div>
@@ -371,10 +371,10 @@ onMounted(async () => {
             >
               <ui-fields-input-table-filter
                 :id="`dateStart_${uuidV4}`"
+                v-model="filters.dateStart"
                 class="abonements-table__field"
                 type="date"
                 name="dateStart"
-                v-model="filters.dateStart"
                 @update:modelValue="onFilterChange"
               ></ui-fields-input-table-filter>
             </div>
@@ -383,10 +383,10 @@ onMounted(async () => {
             >
               <ui-fields-input-table-filter
                 :id="`dateEnd_${uuidV4}`"
+                v-model="filters.dateEnd"
                 class="abonements-table__field"
                 type="date"
                 name="dateEnd"
-                v-model="filters.dateEnd"
                 @update:modelValue="onFilterChange"
               ></ui-fields-input-table-filter>
             </div>
@@ -395,10 +395,10 @@ onMounted(async () => {
             >
               <ui-fields-input-table-filter
                 :id="`visitsQuantity_${uuidV4}`"
+                v-model="filters.visitsQuantity"
                 class="abonements-table__field"
                 type="number"
                 name="visitsQuantity"
-                v-model="filters.visitsQuantity"
                 @update:modelValue="onFilterChange"
               ></ui-fields-input-table-filter>
             </div>
@@ -407,10 +407,10 @@ onMounted(async () => {
             >
               <ui-fields-input-table-filter
                 :id="`visitsLeft_${uuidV4}`"
+                v-model="filters.visitsLeft"
                 class="abonements-table__field"
                 type="number"
                 name="visitsLeft"
-                v-model="filters.visitsLeft"
                 @update:modelValue="onFilterChange"
               ></ui-fields-input-table-filter>
             </div>
@@ -419,10 +419,10 @@ onMounted(async () => {
             >
               <ui-fields-input-table-filter
                 :id="`statusId_${uuidV4}`"
+                v-model="filters.statusId"
                 class="abonements-table__field"
                 type="number"
                 name="statusId"
-                v-model="filters.statusId"
                 @update:modelValue="onFilterChange"
               ></ui-fields-input-table-filter>
             </div>
@@ -432,34 +432,34 @@ onMounted(async () => {
               Ф
               <ui-fields-input-table-filter
                 :id="`surname_${uuidV4}`"
+                v-model="filters.surname"
                 class="abonements-table__field-filter"
                 type="text"
                 name="surname"
-                v-model="filters.surname"
-                @update:modelValue="onFilterChange"
                 placeholder="Фамилия"
+                @update:modelValue="onFilterChange"
               >
               </ui-fields-input-table-filter>
               И
               <ui-fields-input-table-filter
                 :id="`name_${uuidV4}`"
+                v-model="filters.name"
                 class="abonements-table__field-filter"
                 type="text"
                 name="name"
-                v-model="filters.name"
-                @update:modelValue="onFilterChange"
                 placeholder="Имя"
+                @update:modelValue="onFilterChange"
               >
               </ui-fields-input-table-filter>
               О
               <ui-fields-input-table-filter
                 :id="`patronymic_${uuidV4}`"
+                v-model="filters.patronymic"
                 class="abonements-table__field-filter"
                 type="text"
                 name="patronymic"
-                v-model="filters.patronymic"
-                @update:modelValue="onFilterChange"
                 placeholder="Отчество"
+                @update:modelValue="onFilterChange"
               ></ui-fields-input-table-filter>
             </div>
           </div>
@@ -536,9 +536,9 @@ onMounted(async () => {
           ></div>
           <div class="abonements-table__header-row">
             <div
-              class="abonements-table__header-cell-event"
               v-for="day in daysOfCurrentMonth"
               :key="day"
+              class="abonements-table__header-cell-event"
             >
               {{ day }}
             </div>
@@ -547,9 +547,9 @@ onMounted(async () => {
             class="abonements-table__header-row abonements-table__header-row--secondary"
           >
             <div
-              class="abonements-table__header-cell-event"
               v-for="day in daysOfCurrentMonth"
               :key="day"
+              class="abonements-table__header-cell-event"
             >
               <!-- {{ day }} -->
             </div>
@@ -566,9 +566,9 @@ onMounted(async () => {
                 class="abonements-table__body-row js-right-row"
               >
                 <div
-                  class="abonements-table__body-cell-event"
                   v-for="day in daysOfCurrentMonth"
                   :key="day"
+                  class="abonements-table__body-cell-event"
                 >
                   <div
                     v-for="event in getEvents(

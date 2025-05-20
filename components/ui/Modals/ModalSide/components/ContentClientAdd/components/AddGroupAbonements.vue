@@ -193,24 +193,25 @@ defineExpose({
               </svg>
               <div class="card-table__field card-table__field--abonements-type">
                 <v-radio-button
-                  name="abonementType"
-                  :input-data="inputData"
-                  class="card-table__radio"
                   v-model="toggleAbonementType"
+                  name="abonementType"
+                  class="card-table__radio"
+                  :input-data="inputData"
                   @update:modelValue="resetTempAbonement"
                 />
               </div>
-              <div class="card-table__block" v-if="toggleAbonementType === 0">
+              <div v-if="toggleAbonementType === 0" class="card-table__block">
                 <div class="card-table__field card-table__field--quantity">
                   <ui-selects-select
                     :id="`abonementQuantity_${uuidV4}`"
+                    v-model="tempAbonement.quantity"
                     type="number"
+                    name="quantity"
                     :title="
                       $t(
                         `forms.client.add.fieldsets.abonement.fields.quantity.label`
                       )
                     "
-                    name="quantity"
                     :options-list="[
                       { text: '1', value: 1 },
                       { text: '3', value: 3 },
@@ -218,20 +219,20 @@ defineExpose({
                     ]"
                     :success-message="$t('zod.success')"
                     :errorSubmit="errors.quantity"
-                    v-model="tempAbonement.quantity"
                   ></ui-selects-select>
                 </div>
                 <div class="card-table__field card-table__field--duration">
                   <ui-selects-select
                     :id="`abonementDuration_${uuidV4}`"
+                    v-model="tempAbonement.duration"
                     type="text"
+                    name="duration"
                     :disabled="!tempAbonement.quantity"
                     :title="
                       $t(
                         `forms.client.add.fieldsets.abonement.fields.duration.label`
                       )
                     "
-                    name="duration"
                     :options-list="[
                       { text: '5', value: 5 },
                       { text: '10', value: 10 },
@@ -239,7 +240,6 @@ defineExpose({
                     ]"
                     :success-message="$t('zod.success')"
                     :errorSubmit="errors.duration"
-                    v-model="tempAbonement.duration"
                   ></ui-selects-select>
                 </div>
                 <div
@@ -247,35 +247,35 @@ defineExpose({
                 >
                   <ui-fields-input
                     :id="`abonementActivationDate_${uuidV4}`"
+                    v-model="tempAbonement.activationDate"
                     type="date"
+                    name="activationDate"
                     :title="
                       $t(
                         `forms.client.add.fieldsets.abonement.fields.activationDate.label`
                       )
                     "
-                    name="activationDate"
                     :success-message="$t('zod.success')"
                     :errorSubmit="errors.activationDate"
-                    v-model="tempAbonement.activationDate"
                   ></ui-fields-input>
                 </div>
               </div>
-              <div class="card-table__block" v-else>
+              <div v-else class="card-table__block">
                 <div
                   class="card-table__field card-table__field--active-abonements"
                 >
                   <ui-selects-select
                     :id="`abonementSelectedActiveAbonement${uuidV4}`"
+                    v-model="tempAbonement.selectedActiveAbonement"
+                    name="selectedActiveAbonement"
                     :title="
                       $t(
                         `forms.client.add.fieldsets.abonement.fields.activeAbonements.label`
                       )
                     "
-                    name="selectedActiveAbonement"
                     :options-list="abonementOptions"
                     :success-message="$t('zod.success')"
                     :errorSubmit="errors.selectedActiveAbonement"
-                    v-model="tempAbonement.selectedActiveAbonement"
                   ></ui-selects-select>
                 </div>
               </div>
@@ -284,7 +284,7 @@ defineExpose({
         </div>
       </template>
       <template #footer>
-        <div class="client-main__close" v-if="closeButton">
+        <div v-if="closeButton" class="client-main__close">
           <v-close-button @click="close" />
         </div>
       </template>

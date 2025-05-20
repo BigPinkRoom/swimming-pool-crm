@@ -65,16 +65,16 @@ const subtitleClass = computed(() => ({
 
 <template>
   <div class="field">
-    <label :for="id" class="field__title" :class="titleClass">
+    <label class="field__title" :for="id" :class="titleClass">
       {{ title }}
     </label>
     <input
+      :id="id"
+      v-model="value"
       class="field__input"
       :class="fieldClass"
-      :id="id"
       :type="type"
       :name="name"
-      v-model="value"
       :maxlength="maxlength"
       :placeholder="placeholderProp"
     />

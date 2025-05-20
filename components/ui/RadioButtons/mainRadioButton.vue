@@ -38,17 +38,17 @@ const classObject = () => {
 <template>
   <div class="radio-button" :class="classObject">
     <div
-      class="radio-button__item"
       v-for="buttonData in inputData"
       :key="buttonData.id"
+      class="radio-button__item"
     >
       <label :for="buttonData.id">
         <input
           :id="buttonData.id"
-          :name="name"
-          :value="buttonData.value"
           class="radio-button__input"
           type="radio"
+          :name="name"
+          :value="buttonData.value"
           :checked="modelValue === buttonData.value"
           @change="updateValue(buttonData.value)"
         />
