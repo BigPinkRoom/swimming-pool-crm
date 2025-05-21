@@ -1,14 +1,20 @@
 <script setup>
 import { nextTick, computed, ref, onMounted, onUnmounted } from "vue";
+
 import { statusImagesConstants } from "@/constants/statusImages";
 import AbonementEntity from "@/entities/abonementEntity";
 import { abonementFilters } from "@/entities/abonementEntity";
 import { handleFilterChange } from "@/services/modules/abonements";
+import {
+  getEventsForDay,
+  fetchAndProcessAbonements,
+  getProcessedSortedAbonements,
+} from "@/services/modules/abonementsTable";
+import { formatDate } from "@/helpers/formatDate";
 
 const { $services } = useNuxtApp();
 
 const { createFamilyModelResponse } = new AbonementEntity();
-import { formatDate } from "@/helpers/formatDate";
 
 const fullAbonements = ref([]);
 const originalFullAbonements = ref([]);
@@ -16,39 +22,22 @@ const originalFullAbonements = ref([]);
 const { data: fullAbonementsData, error: asyncDataError } = await useAsyncData(
   "fullAbonements",
   async () => {
-    try {
-      const response = await $services.abonements.getFullAbonements();
-      const createdModel = createFamilyModelResponse(response);
-
-      if (!createdModel || !Array.isArray(createdModel)) {
-        console.error(
-          "[AbonementsTable] Error: createdModel is not a valid array.",
-          createdModel
-        );
-        return [];
-      }
-      return createdModel;
-    } catch (error) {
-      console.error(
-        "[AbonementsTable] Error during data fetching or processing:",
-        error
-      );
-      return [];
-    }
-  }
+    return fetchAndProcessAbonements({
+      abonementsService: $services.abonements,
+      createFamilyModelResponseFn: createFamilyModelResponse,
+    });
+  },
 );
 
 if (asyncDataError.value) {
-  console.error(
-    "[AbonementsTable] Error from useAsyncData:",
-    asyncDataError.value
-  );
   fullAbonements.value = [];
   originalFullAbonements.value = [];
+
+  throw asyncDataError.value;
 } else if (fullAbonementsData.value) {
   fullAbonements.value = JSON.parse(JSON.stringify(fullAbonementsData.value));
   originalFullAbonements.value = JSON.parse(
-    JSON.stringify(fullAbonementsData.value)
+    JSON.stringify(fullAbonementsData.value),
   );
 } else {
   fullAbonements.value = [];
@@ -60,18 +49,6 @@ const daysOfCurrentMonth = ref($services.abonements.getDaysOfCurrentMonth());
 const getStatusImage = (status) => {
   return statusImagesConstants[status] || null;
 };
-
-function getEvents(day, abonementId, family) {
-  if (!family || !Array.isArray(family.events)) return [];
-
-  return family.events.filter((event) => {
-    const eventDay = new Date(event.date).getDate();
-    return (
-      Number(eventDay) === Number(day)
-      // && Number(event.abonementId) === Number(abonementId) // TO DO
-    );
-  });
-}
 
 const emit = defineEmits(["openModalAdd", "openModalEdit"]);
 
@@ -99,7 +76,7 @@ const openModalEdit = (familyFromTable) => {
 
   if (representativeClientId === undefined) {
     console.warn(
-      "[AbonementsTable] Could not extract representativeClientId from familyFromTable. Modal might show filtered data."
+      "[AbonementsTable] Could not extract representativeClientId from familyFromTable. Modal might show filtered data.",
     );
     emit("openModal", { type: "edit", family: familyFromTable });
     return;
@@ -107,15 +84,15 @@ const openModalEdit = (familyFromTable) => {
 
   const originalFamily = originalFullAbonements.value.find((originalFam) =>
     originalFam.clients?.some(
-      (client) => client.clientId === representativeClientId
-    )
+      (client) => client.clientId === representativeClientId,
+    ),
   );
 
   if (originalFamily) {
     emit("openModal", { type: "edit", family: originalFamily });
   } else {
     console.warn(
-      `[AbonementsTable] Original family with client ID '${representativeClientId}' not found. Modal will show table version.`
+      `[AbonementsTable] Original family with client ID '${representativeClientId}' not found. Modal will show table version.`,
     );
     emit("openModal", { type: "edit", family: familyFromTable });
   }
@@ -142,14 +119,20 @@ function handleSort(columnKey) {
     type: order?.toUpperCase(),
   }));
 
-  $services.abonements.getFullAbonements({ sortings }).then((response) => {
-    const createdModel = createFamilyModelResponse(response);
-    fullAbonements.value = JSON.parse(JSON.stringify(createdModel));
-    syncRowHeights();
-  });
+  getProcessedSortedAbonements({
+    abonementsService: $services.abonements,
+    sortings: sortings,
+    createFamilyModelResponseFn: createFamilyModelResponse,
+  })
+    .then((sortedData) => {
+      fullAbonements.value = JSON.parse(JSON.stringify(sortedData));
+      syncRowHeights();
+    })
+    .catch((error) => {
+      throw error;
+    });
 }
 
-// Единое вычисляемое свойство для состояний сортировки всех столбцов
 const columnSortOrdersMap = computed(() => {
   return sortState.value.reduce((map, sortEntry) => {
     map[sortEntry.key] = sortEntry.order;
@@ -571,11 +554,7 @@ onMounted(async () => {
                   class="abonements-table__body-cell-event"
                 >
                   <div
-                    v-for="event in getEvents(
-                      day,
-                      abonement.abonementId,
-                      family
-                    )"
+                    v-for="event in getEventsForDay(day, family)"
                     :key="event.eventId"
                   >
                     {{ event.value || null }}
@@ -814,7 +793,9 @@ onMounted(async () => {
   &__sort-icon {
     opacity: 0.4;
     cursor: pointer;
-    transition: opacity 0.3s, transform 0.3s;
+    transition:
+      opacity 0.3s,
+      transform 0.3s;
     &--desc {
       opacity: 1;
       transform: rotate(180deg);
