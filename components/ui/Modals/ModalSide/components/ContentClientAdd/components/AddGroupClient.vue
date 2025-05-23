@@ -1,7 +1,12 @@
 /** * @component AddGroupClient * @description Компонент для добавления и
-редактирования группы клиентов * @vue-prop {String} actionType - Тип действия
-(добавление/редактирование) * @vue-prop {Boolean} closeButton - Флаг отображения
-кнопки закрытия */
+редактирования группы клиентов. * Позволяет управлять списком клиентов в рамках
+одной сессии добавления/редактирования, * валидировать вводимые данные и
+взаимодействовать с хранилищем клиентов. * * @vue-prop {Object} [actionType] -
+Объект, определяющий тип действия и начальные данные. * Может содержать `{ type:
+'edit', family: { clients: [...] } }` для редактирования * существующей семьи
+клиентов или быть пустым для добавления новой. * @vue-prop {boolean}
+[closeButton=false] - Флаг, определяющий отображение кнопки закрытия в
+компоненте. */
 <script setup>
 import { reactive, ref, computed, nextTick, onMounted } from "vue";
 import { useForm } from "vee-validate";
@@ -10,6 +15,7 @@ import { toTypedSchema } from "@vee-validate/zod";
 import { uuid } from "vue-uuid";
 
 import { useClientsStore } from "@/stores/clientStore";
+import ClientEntity, { getClientGenderOptions } from "@/entities/clientEntity";
 
 import vRadioButton from "@/components/ui/RadioButtons/mainRadioButton";
 import vCloseButton from "@/components/ui/Buttons/ButtonClose.vue";
@@ -21,50 +27,98 @@ import { clientAddValidationSchema } from "@/schemas/zod/clientSchemas";
 
 import { clientsConstants } from "@/constants/clients";
 
+/**
+ * @type {object}
+ * @description Экземпляр сервисов Nuxt, предоставляющий доступ к глобальным сервисам приложения (например, `$services.clients`).
+ */
 const { $services } = useNuxtApp();
+/**
+ * @type {object}
+ * @description Экземпляр плагина i18n Nuxt, предоставляющий доступ к функциям интернационализации.
+ */
 const { $i18n } = useNuxtApp();
+/**
+ * @type {Function}
+ * @description Функция для перевода строк, полученная из `$i18n.t`.
+ */
 const t = $i18n.t;
+/**
+ * @type {import('@/stores/clientStore').ClientsStore}
+ * @description Экземпляр хранилища клиентов Pinia.
+ */
 const clientsStore = useClientsStore();
 
+/**
+ * @type {ClientEntity}
+ * @description Экземпляр класса ClientEntity для доступа к методам сущности клиента, например, для создания нового клиента.
+ */
+const clientEntityInstance = new ClientEntity();
+
+/**
+ * @type {import('@vee-validate/zod').TypedSchema}
+ * @description Схема валидации Zod, преобразованная для использования с VeeValidate.
+ */
 const validationSchema = toTypedSchema(clientAddValidationSchema(t));
 
+/**
+ * @description Определяет принимаемые компонентом входные свойства (props).
+ */
 const props = defineProps({
   actionType: { type: Object },
   closeButton: { type: Boolean },
 });
 
 /**
- * +type {Object} Форма с валидацией
+ * @description Экземпляр VeeValidate `useForm` для управления состоянием формы, валидацией и значениями.
+ * @property {object} errors - Объект с ошибками валидации для каждого поля формы.
+ * @property {object} values - Реактивный объект со значениями полей формы.
+ * @property {object} meta - Метаданные формы (например, `dirty`, `valid`).
+ * @property {Function} validate - Функция для запуска валидации формы.
+ * @property {Function} resetForm - Функция для сброса состояния формы к начальным значениям.
  */
 const { errors, values, meta, validate, resetForm } = useForm({
   validationSchema,
-  initialValues: {
-    name: "",
-    surname: "",
-    patronymic: "",
-    birthday: "",
-    gender: 0,
-  },
+  initialValues: clientEntityInstance.createNewClient(),
 });
 
 /**
- * @type {Array} Данные для радио-кнопок выбора пола
+ * @type {import('vue').ReactiveEffect<Array<{id: number, value: number, label: string}>>}
+ * @description Реактивный массив данных для радио-кнопок выбора пола. Генерируется функцией `getClientGenderOptions`.
  */
-const inputData = reactive([
-  { id: 0, value: 0, label: "Мальчик" },
-  { id: 1, value: 1, label: "Девочка" },
-]);
+const inputData = reactive(getClientGenderOptions());
 
 /**
- * @type {Object} Временное хранилище данных клиентов
+ * @type {import('vue').ReactiveEffect<Object<number, any>>}
+ * @description Реактивный объект, служащий временным хранилищем для данных клиентов, добавляемых или редактируемых в компоненте.
+ *              Ключами являются ID клиентов, значениями - объекты с данными клиента.
  */
 const tempClients = reactive({});
 
+/**
+ * @type {string}
+ * @description Уникальный идентификатор UUID v4, используемый для генерации уникальных ID для полей ввода в шаблоне.
+ */
 const uuidV4 = uuid.v4();
+/**
+ * @type {import('vue').Ref<boolean>}
+ * @description Флаг, управляющий отображением кнопки "Добавить еще одного клиента".
+ */
 const showOneMoreClient = ref(true);
+/**
+ * @type {import('vue').Ref<HTMLInputElement|null>}
+ * @description Ссылка на DOM-элемент поля ввода даты рождения, используется для применения маски ввода.
+ */
 const birthdayDate = ref(null);
+/**
+ * @type {import('vue').Ref<boolean>}
+ * @description Флаг, указывающий, находится ли форма активного клиента в режиме редактирования.
+ */
 const isEditing = ref(true);
 
+/**
+ * @description Определяет события, которые компонент может генерировать.
+ * @emits close - Событие, генерируемое при необходимости закрыть компонент (например, модальное окно).
+ */
 defineEmits(["close"]);
 
 /**
@@ -107,24 +161,6 @@ const toggleEditing = async (value) => {
  */
 const addInputMask = async () => {
   $services.clients.addInputMask(birthdayDate.value);
-};
-
-/**
- * Получает или создает временного клиента
- * @param {number} index - Индекс клиента (начиная с 1)
- * @returns {Object} Данные клиента
- */
-const getTempClient = (index) => {
-  if (!tempClients[index]) {
-    tempClients[index] = {
-      name: "",
-      surname: "",
-      patronymic: "",
-      birthday: "",
-      gender: 0,
-    };
-  }
-  return tempClients[index];
 };
 
 /**
@@ -204,7 +240,10 @@ const addClientToStore = async (activeIndex) => {
 };
 
 /**
- * Закрывает модальное окно
+ * Генерирует событие `close`.
+ * Используется для сигнализации родительскому компоненту о необходимости закрытия
+ * данного компонента (например, модального окна).
+ * @emits close
  */
 const close = () => {
   $emit("close");
@@ -228,6 +267,13 @@ const deleteClient = async (index) => {
   showOneMoreClient.value = result.showOneMoreClient;
 };
 
+/**
+ * @description Отслеживает изменения в `props.actionType`.
+ * При изменении типа действия (например, при переключении с добавления на редактирование семьи),
+ * вызывает сервисную функцию `handleActionTypeChange` для обновления состояния клиентов
+ * и соответствующим образом устанавливает флаг `isEditing`.
+ * Выполняется немедленно при монтировании компонента благодаря `{ immediate: true }`.
+ */
 watch(
   () => props.actionType,
   async (newActionType) => {
@@ -243,7 +289,14 @@ watch(
   { immediate: true, deep: true },
 );
 
-// Инициализация компонента при необходимости
+/**
+ * @description Хук жизненного цикла, выполняемый после монтирования компонента.
+ * Проверяет условия: если список клиентов в `clientsStore` пуст,
+ * текущее действие не является редактированием (`props.actionType.type !== "edit"`),
+ * и нет предзагруженных клиентов из `props.actionType.family.clients`,
+ * то автоматически добавляется форма для одного нового клиента через вызов `addOneMoreClients`.
+ * Это обеспечивает инициализацию формы для новой семьи клиентов.
+ */
 onMounted(() => {
   // Проверяем, есть ли предзагруженные клиенты из props (например, из поиска)
   const hasPreloadedClients =

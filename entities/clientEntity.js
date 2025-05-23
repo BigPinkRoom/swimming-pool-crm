@@ -62,3 +62,22 @@ export default class ClientEntity {
     return fieldsCheck;
   };
 }
+
+/**
+ * Предоставляет опции для выбора пола клиента.
+ * Используется для генерации элементов управления, таких как радио-кнопки.
+ *
+ * @export
+ * @function getClientGenderOptions
+ * @returns {Array<{id: number, value: number, label: string}>} Массив объектов с опциями для выбора пола.
+ * Каждый объект содержит:
+ * - `id`: Уникальный идентификатор для ключа Vue.
+ * - `value`: Значение, которое будет присвоено модели.
+ * - `label`: Текст метки для отображения пользователю.
+ */
+export function getClientGenderOptions() {
+  return [
+    { id: 0, value: 0, label: "Мальчик" },
+    { id: 1, value: 1, label: "Девочка" },
+  ];
+}
