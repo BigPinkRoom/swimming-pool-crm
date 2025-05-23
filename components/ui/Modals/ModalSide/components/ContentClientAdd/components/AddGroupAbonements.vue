@@ -1,3 +1,7 @@
+/** * @file Компонент для добавления/изменения групповых абонементов *
+@description Позволяет создавать новые абонементы или изменять существующие для
+группы клиентов * @module AddGroupAbonements */
+
 <script setup>
 import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
@@ -7,6 +11,17 @@ import { uuid } from "vue-uuid";
 
 import { useAbonementsStore } from "@/stores/abonementStore";
 import { formatDate } from "@/helpers/formatDate";
+import {
+  normalizeAbonements,
+  getAbonementOptions,
+  getCurrentActiveAbonement,
+  getInitialTempAbonement,
+  getInitialFormValues,
+  handleAbonementTypeChange,
+  handleAbonementOptionsChange,
+  handleFamilyAbonementsChange,
+  getCurrentTempAbonement,
+} from "@/services/modules/abonements";
 
 import vRadioButton from "@/components/ui/RadioButtons/mainRadioButton";
 import vCloseButton from "@/components/ui/Buttons/ButtonClose.vue";
@@ -18,137 +33,148 @@ const { $i18n } = useNuxtApp();
 const t = $i18n.t;
 const abonementsStore = useAbonementsStore();
 
+/**
+ * Схема валидации для формы абонемента
+ * @type {import('@vee-validate/zod').TypedSchema}
+ */
 const validationSchema = toTypedSchema(abonementValidationSchema(t));
 
+/**
+ * @typedef {Object} ActionType
+ * @property {string} type - Тип действия ('add' или 'edit')
+ * @property {Object} [family] - Данные семьи
+ */
+
+/**
+ * @typedef {Object} Props
+ * @property {ActionType} actionType - Тип действия и данные семьи
+ * @property {boolean} closeButton - Флаг отображения кнопки закрытия
+ */
+
+/**
+ * Props компонента
+ */
 const props = defineProps({
   actionType: { type: Object, default: () => ({ type: "add", family: null }) },
   closeButton: { type: Boolean },
 });
 
 /**
- * @type {Object} Форма с валидацией
+ * Форма с валидацией
+ * @type {import('vee-validate').UseFormReturn<Object>}
  */
 const { errors, values, meta, validate, resetForm } = useForm({
   validationSchema,
-  initialValues: {
-    quantity: null,
-    duration: null,
-    activationDate: "",
-    abonementType: 0,
-  },
+  initialValues: getInitialFormValues(),
 });
 
+/**
+ * Опции для выбора типа абонемента
+ * @type {Array<{id: number, value: number, label: string}>}
+ */
 const inputData = reactive([
   { id: 0, value: 0, label: "Добавить новый" },
   { id: 1, value: 1, label: "Изменить существующий" },
 ]);
 
-// toggleAbonementType должен инициализироваться на основе actionType.type, но также
-// должен учитывать, есть ли уже загруженные абонементы для выбора.
-const toggleAbonementType = ref(0); // По умолчанию "Добавить новый"
+/**
+ * Текущий тип абонемента (0 - новый, 1 - существующий)
+ * @type {import('vue').Ref<number>}
+ */
+const toggleAbonementType = ref(0);
 
-// Формируем options-list для select из абонементов в сторе
-const abonementOptions = computed(() => {
-  // Проверяем, есть ли абонементы в сторе и является ли это массивом
-  if (abonementsStore.abonements && Array.isArray(abonementsStore.abonements)) {
-    return abonementsStore.abonements.map((abonement) => ({
-      text: `№ ${abonement.abonement_id} - (${abonement.visits_left ?? "-"} / ${
-        abonement.visits_quantity ?? "-"
-      } занятий) До ${formatDate(abonement.date_end, true) ?? "-"}`, // Используем поля из лога
-      value: abonement.abonement_id, // Используем поля из лога
-    }));
-  }
-  return []; // Возвращаем пустой массив, если абонементов нет или стор некорректен
-});
+/**
+ * Временный абонемент для хранения данных формы
+ * @type {import('vue').Reactive<{
+ *   duration: number|null,
+ *   quantity: number|null,
+ *   activationDate: string|null,
+ *   selectedActiveAbonement: string|null
+ * }>}
+ */
+const tempAbonement = reactive(getInitialTempAbonement());
 
-const tempAbonement = reactive({
-  duration: null,
-  quantity: null,
-  activationDate: null,
-  selectedActiveAbonement: null,
-});
+/**
+ * Опции для селекта абонементов
+ * @type {import('vue').ComputedRef<Array<{text: string, value: string|number}>>}
+ */
+const abonementOptions = computed(() =>
+  getAbonementOptions(abonementsStore.abonements),
+);
 
-// Главный watch для загрузки данных абонементов из props.actionType
+/**
+ * Обработчик изменения данных абонементов семьи
+ * @param {ActionType} newActionType - Новые данные действия
+ */
 watch(
   () => props.actionType,
   (newActionType) => {
     const familyAbonements = newActionType?.family?.abonements;
+    const result = handleFamilyAbonementsChange(familyAbonements);
 
-    if (familyAbonements && familyAbonements.length > 0) {
-      // Нормализуем структуру абонементов для корректного отображения
-      const normalized = familyAbonements.map((a) => ({
-        abonement_id: a.abonement_id ?? a.id ?? a.abonementId,
-        visits_quantity: a.visits_quantity ?? a.visitsQuantity,
-        visits_left: a.visits_left ?? a.visitsLeft,
-        date_create: a.date_create ?? a.dateCreate,
-        date_start: a.date_start ?? a.dateStart,
-        date_end: a.date_end ?? a.dateEnd,
-        user_created_id: a.user_created_id ?? a.userCreatedId,
-        status_id: a.status_id ?? a.statusId,
-        branch_id: a.branch_id ?? a.branchId,
-      }));
-      abonementsStore.setFilledObject(normalized);
-      toggleAbonementType.value = 1;
-      // Гарантируем выбор первого абонемента
-      tempAbonement.selectedActiveAbonement =
-        normalized[0]?.abonement_id ?? null;
-    } else {
-      abonementsStore.setFilledObject([]);
-      toggleAbonementType.value = 0;
-      tempAbonement.selectedActiveAbonement = null;
-    }
+    abonementsStore.setFilledObject(result.abonements);
+    toggleAbonementType.value = result.type;
+    tempAbonement.selectedActiveAbonement = result.selectedAbonement;
   },
-  { immediate: true, deep: true }
+  { immediate: true, deep: true },
 );
 
+/**
+ * Обработчик изменения опций абонементов
+ * @param {Array<{text: string, value: string|number}>} newOptions - Новые опции абонементов
+ */
 watch(abonementOptions, (newOptions) => {
-  if (toggleAbonementType.value === 1) {
-    const newSelectedValue = newOptions?.[0]?.value ?? null;
-    // Если ничего не выбрано, выбираем первый
-    if (!tempAbonement.selectedActiveAbonement && newSelectedValue) {
-      tempAbonement.selectedActiveAbonement = newSelectedValue;
-    }
-  }
+  tempAbonement.selectedActiveAbonement = handleAbonementOptionsChange(
+    toggleAbonementType.value,
+    tempAbonement.selectedActiveAbonement,
+    newOptions,
+  );
 });
 
-// Watch для реакции на переключение радиокнопок "Добавить новый" / "Изменить существующий"
-watch(toggleAbonementType, (newValue, oldValue) => {
-  if (newValue === 0) {
-    tempAbonement.selectedActiveAbonement = null;
-  } else {
-    const firstOptionValue = abonementOptions.value?.[0]?.value ?? null;
-    if (tempAbonement.selectedActiveAbonement !== firstOptionValue) {
-      tempAbonement.selectedActiveAbonement = firstOptionValue;
-    }
-  }
-  resetTempAbonement();
+/**
+ * Обработчик изменения типа абонемента
+ * @param {number} newValue - Новый тип абонемента
+ */
+watch(toggleAbonementType, (newValue) => {
+  const result = handleAbonementTypeChange(newValue, abonementOptions.value);
+  tempAbonement.selectedActiveAbonement = result.selectedActiveAbonement;
+  resetForm({ values: result.formValues });
 });
 
+/**
+ * Сбрасывает временный абонемент к начальным значениям
+ * @function resetTempAbonement
+ */
 const resetTempAbonement = () => {
-  tempAbonement.quantity = null;
-  tempAbonement.duration = null;
-  tempAbonement.activationDate = null;
-
+  Object.assign(tempAbonement, getInitialTempAbonement());
   resetForm({
-    values: {
-      quantity: null,
-      duration: null,
-      activationDate: "",
-      abonementType: toggleAbonementType.value,
-    },
+    values: getInitialFormValues(toggleAbonementType.value),
   });
 };
 
+/**
+ * Уникальный идентификатор для компонента
+ * @type {string}
+ */
 const uuidV4 = uuid.v4();
+
+/**
+ * Флаг загрузки данных
+ * @type {import('vue').Ref<boolean>}
+ */
 const clientAddToStoreLoading = ref(false);
-// Получаем текущий абонемент (например, первый активный)
-const currentAbonement = computed(
-  () =>
-    abonementsStore.abonements.find((a) => a.statusType === "active") ||
-    abonementsStore.abonements[0] ||
-    null
+
+/**
+ * Текущий активный абонемент
+ * @type {import('vue').ComputedRef<Object|null>}
+ */
+const currentAbonement = computed(() =>
+  getCurrentActiveAbonement(abonementsStore.abonements),
 );
 
+/**
+ * Очистка при размонтировании компонента
+ */
 onUnmounted(() => {
   abonementsStore.setFilledObject([]);
   resetTempAbonement();
@@ -156,13 +182,16 @@ onUnmounted(() => {
   tempAbonement.selectedActiveAbonement = null;
 });
 
+/**
+ * Экспортируемые методы компонента
+ */
 defineExpose({
-  getCurrentTempAbonement: () => {
-    if (toggleAbonementType.value === 0) {
-      return { ...tempAbonement };
-    }
-    return null;
-  },
+  /**
+   * Получает текущий временный абонемент
+   * @returns {Object|null} Текущий временный абонемент или null
+   */
+  getCurrentTempAbonement: () =>
+    getCurrentTempAbonement(toggleAbonementType.value, tempAbonement),
 });
 </script>
 
@@ -209,7 +238,7 @@ defineExpose({
                     name="quantity"
                     :title="
                       $t(
-                        `forms.client.add.fieldsets.abonement.fields.quantity.label`
+                        `forms.client.add.fieldsets.abonement.fields.quantity.label`,
                       )
                     "
                     :options-list="[
@@ -230,7 +259,7 @@ defineExpose({
                     :disabled="!tempAbonement.quantity"
                     :title="
                       $t(
-                        `forms.client.add.fieldsets.abonement.fields.duration.label`
+                        `forms.client.add.fieldsets.abonement.fields.duration.label`,
                       )
                     "
                     :options-list="[
@@ -252,7 +281,7 @@ defineExpose({
                     name="activationDate"
                     :title="
                       $t(
-                        `forms.client.add.fieldsets.abonement.fields.activationDate.label`
+                        `forms.client.add.fieldsets.abonement.fields.activationDate.label`,
                       )
                     "
                     :success-message="$t('zod.success')"
@@ -270,7 +299,7 @@ defineExpose({
                     name="selectedActiveAbonement"
                     :title="
                       $t(
-                        `forms.client.add.fieldsets.abonement.fields.activeAbonements.label`
+                        `forms.client.add.fieldsets.abonement.fields.activeAbonements.label`,
                       )
                     "
                     :options-list="abonementOptions"

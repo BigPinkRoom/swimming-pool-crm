@@ -7,22 +7,15 @@ import { reactive, ref, computed, nextTick, onMounted } from "vue";
 import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 
-import Cleave from "cleave.js";
 import { uuid } from "vue-uuid";
 
 import { useClientsStore } from "@/stores/clientStore";
-import Clients from "@/services/modules/clients";
-
-import { formatDate } from "@/helpers/formatDate";
-
-import AbonementEntity from "@/entities/abonementEntity";
 
 import vRadioButton from "@/components/ui/RadioButtons/mainRadioButton";
 import vCloseButton from "@/components/ui/Buttons/ButtonClose.vue";
 import CardTable from "@/components/Common/CardTable.vue";
 
 import { calculateAge } from "@/helpers/calculateAge";
-import ClientEntity from "@/entities/clientEntity";
 
 import { clientAddValidationSchema } from "@/schemas/zod/clientSchemas";
 
@@ -32,7 +25,6 @@ const { $services } = useNuxtApp();
 const { $i18n } = useNuxtApp();
 const t = $i18n.t;
 const clientsStore = useClientsStore();
-const { checkValuesForValidateReset } = new ClientEntity();
 
 const validationSchema = toTypedSchema(clientAddValidationSchema(t));
 
@@ -42,7 +34,7 @@ const props = defineProps({
 });
 
 /**
- * @type {Object} Форма с валидацией
+ * +type {Object} Форма с валидацией
  */
 const { errors, values, meta, validate, resetForm } = useForm({
   validationSchema,
@@ -79,20 +71,9 @@ defineEmits(["close"]);
  * @computed
  * @returns {String} Текст для кнопки добавления клиента
  */
-const addClientText = computed(() => {
-  const checkClientLessMax =
-    clientsStore.clients.length < clientsConstants.MAX_QUANTITY_CLIENTS;
-  const checkClientEqualMax =
-    clientsStore.clients.length >= clientsConstants.MAX_QUANTITY_CLIENTS;
-
-  if (checkClientLessMax) {
-    return "+ Добавить ещё одного ребёнка";
-  } else if (checkClientEqualMax) {
-    return "Максимальное количество детей";
-  } else {
-    return "+ Добавить ребёнка";
-  }
-});
+const addClientText = computed(() =>
+  $services.clients.getAddClientButtonText(clientsStore.clients.length),
+);
 
 /**
  * @computed
@@ -101,8 +82,8 @@ const addClientText = computed(() => {
 const clientSections = computed(() =>
   $services.clients.getClientsSections(
     clientsStore.clients,
-    clientsStore.currentClientId
-  )
+    clientsStore.currentClientId,
+  ),
 );
 
 /**
@@ -110,7 +91,7 @@ const clientSections = computed(() =>
  * @returns {Object} Текущий временный клиент
  */
 const currentTempClient = computed(() =>
-  getTempClient(clientsStore.currentClientId)
+  $services.clients.getTempClient(tempClients, clientsStore.currentClientId),
 );
 
 /**
@@ -118,85 +99,14 @@ const currentTempClient = computed(() =>
  * @param {Boolean} value - Новое значение режима редактирования
  */
 const toggleEditing = async (value) => {
-  isEditing.value = value;
-
-  if (value === true) {
-    await nextTick();
-    addInputMask();
-  }
-};
-
-const setEditClient = () => {
-  clientsStore.reset();
-
-  if (props.actionType?.type === "edit" && props.actionType.family?.clients) {
-    const clients = props.actionType.family.clients;
-    Object.keys(tempClients).forEach((key) => delete tempClients[key]);
-
-    clients.forEach((client, index) => {
-      const clientForStore = {
-        name: client.clientName || "",
-        surname: client.clientSurname || "",
-        gender: client.clientGender || 0,
-        birthday: formatDate(client.clientBirthday) || "",
-        patronymic: client.clientPatronymic || "",
-      };
-
-      // Добавляем ID только если он пришел из БД (т.е. клиент существует)
-      if (client.clientId) {
-        clientForStore.id = client.clientId;
-      }
-
-      // Прокидываем isFirstClient (camelCase или snake_case)
-      if (client.isFirstClient !== undefined) {
-        clientForStore.isFirstClient = client.isFirstClient;
-      } else if (client.is_first_client !== undefined) {
-        clientForStore.isFirstClient = client.is_first_client;
-      }
-
-      clientsStore.setClientOfEdit(clientForStore);
-      tempClients[index + 1] = { ...clientForStore };
-    });
-
-    if (clients.length > 0) {
-      clientsStore.currentClientId = 1;
-      // Сначала сбрасываем форму на данные первого клиента
-      resetForm({ values: { ...tempClients[1] } });
-      // Затем выключаем режим редактирования
-      nextTick(() => {
-        isEditing.value = false;
-      });
-    } else {
-      // Если клиентов нет, добавляем пустого и показываем форму
-      addOneMoreClients();
-    }
-  } else {
-    // Для нового добавления всегда показываем форму
-    addOneMoreClients();
-  }
+  isEditing.value = await $services.clients.toggleEditing(value, addInputMask);
 };
 
 /**
  * Добавляет маску ввода для поля даты рождения
  */
 const addInputMask = async () => {
-  if (birthdayDate.value?.$el) {
-    const inputElement = birthdayDate.value.$el.querySelector("input");
-    if (inputElement) {
-      if (inputElement._cleave) {
-        inputElement._cleave.destroy();
-      }
-      new Cleave(inputElement, {
-        date: true,
-        delimiter: ".",
-        datePattern: ["d", "m", "Y"],
-        blocks: [2, 2, 4],
-        numericOnly: true,
-        dateMax: "31.12.2100",
-        max: "31122100",
-      });
-    }
-  }
+  $services.clients.addInputMask(birthdayDate.value);
 };
 
 /**
@@ -222,211 +132,47 @@ const getTempClient = (index) => {
  * @param {number} index - Индекс клиента (начиная с 1)
  */
 const changeEdit = async (index) => {
-  // Сохраняем данные текущего клиента перед переключением
-  if (isEditing.value) {
-    const currentClientData = { ...currentTempClient.value };
-    clientsStore.updateActiveClient(
-      clientsStore.currentClientId,
-      currentClientData
-    );
-
-    // Сохраняем данные также в tempClients
-    tempClients[clientsStore.currentClientId] = { ...currentClientData };
-  }
-
-  // Переключаемся на нового клиента
-  clientsStore.currentClientId = index;
-
-  // Загружаем данные нового клиента
-  const clientData = clientsStore.clients[index - 1];
-
-  // Убедимся, что данные в tempClients актуальны
-  if (clientData) {
-    tempClients[index] = { ...clientData };
-  }
-
-  // Загружаем данные в форму
-  resetForm({ values: getTempClient(index) });
-
-  // Всегда включаем режим редактирования при нажатии на кнопку редактирования
-  isEditing.value = true;
-
-  await nextTick();
-  addInputMask();
+  const result = await $services.clients.changeEdit(
+    clientsStore,
+    tempClients,
+    currentTempClient.value,
+    isEditing.value,
+    index,
+    resetForm,
+    addInputMask,
+  );
+  isEditing.value = result.isEditing;
 };
 
 /**
  * Добавляет нового клиента
  */
 const handleAddClientButtonClick = async () => {
-  // Проверяем, находимся ли мы в режиме редактирования
-
-  if (isEditing.value) {
-    // Определяем, редактируем мы существующего клиента или нового
-    const isExistingClient =
-      clientsStore.clients[clientsStore.currentClientId - 1]?.id;
-
-    if (isExistingClient) {
-      // Если редактируем существующего клиента, сохраняем изменения
-      const currentClientData = { ...currentTempClient.value };
-      clientsStore.updateActiveClient(
-        clientsStore.currentClientId,
-        currentClientData
-      );
-      tempClients[clientsStore.currentClientId] = { ...currentClientData };
-
-      // Скрываем режим редактирования
-      isEditing.value = false;
-
-      // Проверяем, есть ли уже новый несохраненный клиент
-      const hasNewUnsavedClient = clientsStore.clients.some(
-        (client) => !client.id
-      );
-
-      // Если уже есть новый несохраненный клиент, не создаем еще один
-      if (hasNewUnsavedClient) {
-        // Находим индекс нового клиента
-        const newClientIndex =
-          clientsStore.clients.findIndex((client) => !client.id) + 1;
-        // Переключаемся на него
-        clientsStore.currentClientId = newClientIndex;
-        resetForm({ values: getTempClient(newClientIndex) });
-        isEditing.value = true;
-        await nextTick();
-        addInputMask();
-        return;
-      }
-
-      // Если нет нового клиента, создаем его
-      const newIndex = clientsStore.addEmpty();
-      clientsStore.currentClientId = newIndex;
-      showOneMoreClient.value = true;
-
-      resetForm({
-        values: {
-          name: "",
-          surname: "",
-          patronymic: "",
-          birthday: "",
-          gender: 0,
-        },
-      });
-
-      // Устанавливаем режим редактирования для нового клиента
-      isEditing.value = true;
-
-      // Помечаем клиента как редактируемый в tempClients
-      tempClients[newIndex] = {
-        name: "",
-        surname: "",
-        patronymic: "",
-        birthday: "",
-        gender: 0,
-        isEditing: true,
-      };
-
-      // После рендеринга добавляем маску ввода
-      await nextTick();
-      addInputMask();
-      return;
-    }
-
-    // Если редактируем нового клиента, выполняем валидацию
-    const resultValidate = await validate();
-    if (resultValidate.valid) {
-      // Сохраняем текущего клиента, если валидация прошла успешно
-      const currentClientData = { ...currentTempClient.value };
-      clientsStore.updateActiveClient(
-        clientsStore.currentClientId,
-        currentClientData
-      );
-      tempClients[clientsStore.currentClientId] = { ...currentClientData };
-
-      // Скрываем режим редактирования после сохранения
-      isEditing.value = false;
-    }
-    return;
+  const result = await $services.clients.handleAddClientButtonClick(
+    clientsStore,
+    tempClients,
+    currentTempClient.value,
+    isEditing.value,
+    resetForm,
+    validate,
+    addInputMask,
+  );
+  isEditing.value = result.isEditing;
+  if (result.newIndex) {
+    showOneMoreClient.value = true;
   }
-
-  // Проверяем, есть ли уже новый несохраненный клиент
-  const hasNewUnsavedClient = clientsStore.clients.some((client) => !client.id);
-
-  // Если уже есть новый несохраненный клиент, не создаем еще один
-  if (hasNewUnsavedClient) {
-    // Находим индекс нового клиента
-    const newClientIndex =
-      clientsStore.clients.findIndex((client) => !client.id) + 1;
-    // Переключаемся на него
-    clientsStore.currentClientId = newClientIndex;
-    resetForm({ values: getTempClient(newClientIndex) });
-    isEditing.value = true;
-    await nextTick();
-    addInputMask();
-    return;
-  }
-
-  // Если не в режиме редактирования и нет нового клиента, проверяем возможность создания нового клиента
-  if ($services.clients.isMaxClientsLimitReached(clientsStore.clients)) {
-    return;
-  }
-
-  // Создаем нового клиента
-  const newIndex = clientsStore.addEmpty();
-  clientsStore.currentClientId = newIndex;
-  showOneMoreClient.value = true;
-
-  resetForm({
-    values: {
-      name: "",
-      surname: "",
-      patronymic: "",
-      birthday: "",
-      gender: 0,
-    },
-  });
-
-  // Устанавливаем режим редактирования для нового клиента
-  isEditing.value = true;
-
-  // Помечаем клиента как редактируемый в tempClients
-  tempClients[newIndex] = {
-    name: "",
-    surname: "",
-    patronymic: "",
-    birthday: "",
-    gender: 0,
-    isEditing: true,
-  };
-
-  // После рендеринга добавляем маску ввода
-  await nextTick();
-  addInputMask();
 };
 
 /**
  * Добавляет нового клиента
  */
 const addOneMoreClients = async () => {
-  if ($services.clients.isMaxClientsLimitReached(clientsStore.clients)) return;
-
-  const newIndex = clientsStore.addEmpty();
-  clientsStore.currentClientId = newIndex;
-  showOneMoreClient.value = true;
-
-  resetForm({
-    values: {
-      name: "",
-      surname: "",
-      patronymic: "",
-      birthday: "",
-      gender: 0,
-    },
-  });
-
-  await nextTick();
-  addInputMask();
-
-  // Устанавливаем режим редактирования для нового клиента
+  await $services.clients.addOneMoreClient(
+    clientsStore,
+    tempClients,
+    resetForm,
+    addInputMask,
+  );
   isEditing.value = true;
 };
 
@@ -435,16 +181,7 @@ const addOneMoreClients = async () => {
  * @param {Number} gender - Пол клиента (0 - мальчик, 1 - девочка)
  * @returns {String} Путь к изображению
  */
-const getGenderImage = (gender) => {
-  switch (gender) {
-    case 1:
-      return "/icons/girl.svg";
-    case 0:
-      return "/icons/boy.svg";
-    default:
-      return "";
-  }
-};
+const getGenderImage = (gender) => $services.clients.getGenderImage(gender);
 
 /**
  * Добавляет клиента в хранилище
@@ -452,26 +189,15 @@ const getGenderImage = (gender) => {
  */
 const addClientToStore = async (activeIndex) => {
   try {
-    const resultValidate = await validate();
-    if (resultValidate.valid) {
-      // Явно получаем значение из computed свойства
-      const tempClient = { ...currentTempClient.value };
-
-      // Определяем, будет ли это первый клиент
-      const isFirstClient = clientsStore.clients.length === 0;
-
-      // Добавляем клиента в хранилище
-      clientsStore.updateActiveClient(activeIndex, tempClient);
-
-      // После добавления проверяем, был ли это первый клиент
-      if (isFirstClient) {
-        // Если это был первый клиент, скрываем форму редактирования
-        toggleEditing(false);
-      } else {
-        // Иначе показываем индикатор загрузки и добавляем нового клиента
-        addOneMoreClients();
-      }
-    }
+    await $services.clients.addClientToStore(
+      clientsStore,
+      tempClients,
+      currentTempClient.value,
+      activeIndex,
+      validate,
+      toggleEditing,
+      addOneMoreClients,
+    );
   } catch (error) {
     throw error;
   }
@@ -489,90 +215,32 @@ const close = () => {
  * @param {number} index - Индекс клиента для удаления (начиная с 1)
  */
 const deleteClient = async (index) => {
-  clientsStore.deleteClient(index);
-  delete tempClients[index];
-
-  // Проверяем, остались ли клиенты
-  if (clientsStore.clients.length === 0) {
-    // Если клиентов не осталось, создаем нового и показываем форму редактирования
-    addOneMoreClients();
-  } else {
-    // Если клиенты остались, выбираем первого
-    clientsStore.currentClientId = 1;
-    await nextTick();
-    resetForm({ values: getTempClient(1) });
-    // Скрываем форму редактирования
-    toggleEditing(false);
-  }
+  const result = await $services.clients.deleteClient(
+    clientsStore,
+    tempClients,
+    index,
+    resetForm,
+    addInputMask,
+    toggleEditing,
+    addOneMoreClients,
+  );
+  isEditing.value = result.isEditing;
+  showOneMoreClient.value = result.showOneMoreClient;
 };
 
 watch(
   () => props.actionType,
-  (newActionType) => {
-    clientsStore.reset();
-    Object.keys(tempClients).forEach((key) => delete tempClients[key]);
-
-    if (newActionType?.type === "edit") {
-      const clients = newActionType.family?.clients;
-      if (clients && clients.length > 0) {
-        clients.forEach((client, index) => {
-          const clientForStore = {
-            name: client.clientName || "",
-            surname: client.clientSurname || "",
-            gender: client.clientGender || 0,
-            birthday: formatDate(client.clientBirthday) || "",
-            patronymic: client.clientPatronymic || "",
-          };
-          if (client.clientId) {
-            clientForStore.id = client.clientId;
-          }
-          if (client.isFirstClient !== undefined) {
-            clientForStore.isFirstClient = client.isFirstClient;
-          } else if (client.is_first_client !== undefined) {
-            clientForStore.isFirstClient = client.is_first_client;
-          }
-          clientsStore.setClientOfEdit(clientForStore);
-          tempClients[index + 1] = { ...clientForStore };
-        });
-        clientsStore.currentClientId = 1;
-        resetForm({ values: { ...tempClients[1] } });
-        isEditing.value = false;
-      } else {
-        addOneMoreClients();
-      }
-    } else {
-      const familyClients = newActionType?.family?.clients;
-      if (familyClients && familyClients.length > 0) {
-        familyClients.forEach((client, index) => {
-          const clientForStore = {
-            name: client.name || "",
-            surname: client.surname || "",
-            patronymic: client.patronymic || "",
-            birthday: formatDate(client.birthday) || "",
-            gender: client.gender === undefined ? null : client.gender,
-          };
-          if (client.id) {
-            clientForStore.id = client.id;
-          }
-          if (client.isFirstClient !== undefined) {
-            clientForStore.isFirstClient = client.isFirstClient;
-          } else if (client.is_first_client !== undefined) {
-            clientForStore.isFirstClient = client.is_first_client;
-          }
-
-          clientsStore.setClientOfEdit(clientForStore);
-          tempClients[index + 1] = { ...clientForStore };
-        });
-
-        clientsStore.currentClientId = 1;
-        resetForm({ values: { ...tempClients[1] } });
-        isEditing.value = false;
-      } else {
-        addOneMoreClients();
-      }
-    }
+  async (newActionType) => {
+    const result = await $services.clients.handleActionTypeChange(
+      clientsStore,
+      tempClients,
+      newActionType,
+      resetForm,
+      addOneMoreClients,
+    );
+    isEditing.value = result.isEditing;
   },
-  { immediate: true, deep: true }
+  { immediate: true, deep: true },
 );
 
 // Инициализация компонента при необходимости
@@ -739,7 +407,7 @@ onMounted(() => {
                   name="patronymic"
                   :title="
                     $t(
-                      `forms.client.add.fieldsets.client.fields.patronymic.label`
+                      `forms.client.add.fieldsets.client.fields.patronymic.label`,
                     )
                   "
                   :success-message="$t('zod.success')"
@@ -755,7 +423,7 @@ onMounted(() => {
                   name="birthday"
                   :title="
                     $t(
-                      `forms.client.add.fieldsets.client.fields.birthday.label`
+                      `forms.client.add.fieldsets.client.fields.birthday.label`,
                     )
                   "
                   :success-message="$t('zod.success')"
@@ -831,7 +499,7 @@ onMounted(() => {
                 class="card-table__button card-table__button--add"
                 :disabled="
                   $services.clients.isMaxClientsLimitReached(
-                    clientsStore.clients
+                    clientsStore.clients,
                   )
                 "
                 @click.prevent="handleAddClientButtonClick"
