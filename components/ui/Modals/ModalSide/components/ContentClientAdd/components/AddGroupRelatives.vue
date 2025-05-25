@@ -1,5 +1,9 @@
-/** * @fileoverview Компонент для добавления и управления группой родственников
-клиента * @module AddGroupRelatives */
+/** * @fileoverview Компонент AddGroupRelatives.vue. * Предназначен для
+управления группой родственников клиента. * Позволяет добавлять, редактировать и
+удалять родственников, валидировать их данные, * а также управлять состоянием
+формы и временным кэшем данных. * Компонент интегрирован с сервисным слоем для
+обработки бизнес-логики и хранилищем Pinia (useRelativesStore). * * @module
+AddGroupRelatives * @version 1.1.0 */
 
 <script setup>
 import { reactive, ref, computed, nextTick, onMounted } from "vue";
@@ -20,69 +24,167 @@ import { relativesConstants } from "@/constants/relatives";
 import { unmaskPhone, maskPhone } from "@/helpers/phoneFormat";
 
 /**
- * @typedef {Object} Props
- * @property {string} actionType - Тип действия (add/edit)
- * @property {boolean} closeButton - Флаг для отображения кнопки закрытия
+ * @typedef {Object} ActionTypeProp
+ * @property {string} type - Тип действия, которое должен выполнить компонент. Может быть 'add' или 'edit'.
+ * @property {Object} [family] - Данные семьи, передаваемые при type: 'edit'.
+ * @property {Array<Object>} [family.relatives] - Массив объектов родственников для инициализации формы в режиме редактирования.
  */
 
 /**
- * @type {Props}
+ * @typedef {Object} ComponentProps
+ * @property {ActionTypeProp} actionType - Объект, определяющий режим работы компонента и начальные данные.
+ * @property {boolean} [closeButton=false] - Флаг, определяющий, нужно ли отображать кнопку закрытия.
+ */
+
+/**
+ * Props компонента.
+ * @type {ComponentProps}
  */
 const props = defineProps({
   actionType: {
     type: Object,
+    required: true,
+    /**
+     * Валидатор для actionType. Проверяет наличие type и его значение ('add' или 'edit').
+     * @param {ActionTypeProp} value - Значение пропса actionType.
+     * @returns {boolean} True, если значение валидно.
+     */
+    validator: (value) => {
+      if (!value || typeof value.type !== "string") return false;
+      const isValidType = ["add", "edit"].includes(value.type);
+      if (
+        value.type === "edit" &&
+        (!value.family || !Array.isArray(value.family.relatives))
+      ) {
+        // console.warn("AddGroupRelatives: 'family.relatives' is required and must be an array when actionType.type is 'edit'.");
+        // Для режима редактирования family.relatives может быть пустым, если новый клиент
+      }
+      return isValidType;
+    },
   },
   closeButton: {
     type: Boolean,
+    default: false,
   },
 });
 
-const { $services } = useNuxtApp();
-const { $i18n } = useNuxtApp();
-const t = $i18n.t;
-const relativesStore = useRelativesStore();
-const uuidV4 = uuid.v4();
-const { checkValuesForValidateReset } = new RelativeEntity();
+/**
+ * Экземпляр Nuxt-приложения для доступа к глобальным сервисам и плагинам.
+ * @type {Object}
+ * @property {Object} $services - Объект, содержащий все зарегистрированные сервисы приложения.
+ * @property {Object} $i18n - Экземпляр i18n для локализации.
+ */
+const { $services, $i18n } = useNuxtApp();
 
+/**
+ * Функция для локализации строк.
+ * @type {Function}
+ */
+const t = $i18n.t;
+
+/**
+ * Экземпляр хранилища Pinia для управления состоянием родственников.
+ * @type {import('@/stores/relativeStore').useRelativesStore}
+ */
+const relativesStore = useRelativesStore();
+
+/**
+ * Уникальный идентификатор (UUID v4) для использования в ключах и ID элементов формы,
+ * для обеспечения уникальности и предотвращения конфликтов.
+ * @type {string}
+ */
+const uuidV4 = uuid.v4();
+
+/**
+ * Экземпляр класса RelativeEntity для работы с бизнес-сущностью "родственник".
+ * @type {RelativeEntity}
+ */
+const relativeEntity = new RelativeEntity();
+
+/**
+ * Функция для проверки, являются ли значения формы пустыми, чтобы определить, нужно ли сбрасывать валидацию.
+ * Получена из экземпляра relativeEntity.
+ * @type {Function}
+ */
+const { checkValuesForValidateReset } = relativeEntity;
+
+/**
+ * Схема валидации Zod, адаптированная для VeeValidate.
+ * @type {import('zod').ZodSchema}
+ */
 const validationSchema = toTypedSchema(relativeAddValidationSchema(t));
 
 /**
- * @type {Object} Форма с валидацией
+ * Объект, возвращаемый хуком useForm от VeeValidate.
+ * @type {Object}
+ * @property {Object} errors - Объект с ошибками валидации для каждого поля формы.
+ * @property {Object} values - Реактивный объект со значениями полей формы.
+ * @property {Object} meta - Объект с метаданными формы (например, dirty, valid, pending).
+ * @property {Function} validate - Асинхронная функция для запуска валидации всех полей формы.
+ * @property {Function} resetForm - Функция для сброса значений формы и ее состояния валидации.
  */
 const { errors, values, meta, validate, resetForm } = useForm({
   validationSchema,
-  initialValues: {
-    name: "",
-    surname: "",
-    patronymic: "",
-    relativeTypeId: 1,
-    telephone: "",
-  },
+  initialValues: relativeEntity.getInitialFormValues(),
 });
 
 // Состояние компонента
+/**
+ * Реактивный объект для временного хранения данных редактируемых родственников.
+ * Ключами являются ID или временные индексы родственников.
+ * @type {Object<string|number, Object>}
+ */
 const tempRelatives = reactive({});
-const showOneMoreRelative = ref(true);
-const telephoneMask = ref(null);
-const isEditing = ref(true);
-const isInitialized = ref(false); // Флаг для отслеживания инициализации компонента
-
-defineEmits(["close"]);
-
-// Загрузка типов родственников при инициализации компонента
-const { data: relativeTypesData } = await useAsyncData(
-  "relativeTypes",
-  async () => {
-    const relativeTypesData = await $services.relatives.getTypes();
-    return relativeTypesData;
-  },
-);
-
-relativesStore.setRelativesTypes(relativeTypesData.value);
 
 /**
- * @computed
- * @returns {Object} Секции родственников
+ * Ref-переменная, определяющая, нужно ли отображать кнопку "Добавить еще одного родственника".
+ * @type {Ref<boolean>}
+ */
+const showOneMoreRelative = ref(true);
+
+/**
+ * Ref-переменная для хранения экземпляра маски Cleave.js для поля ввода телефона.
+ * @type {Ref<null|Object>}
+ */
+const telephoneMask = ref(null); // В данный момент не используется, но может быть для прямого управления маской
+
+/**
+ * Ref-переменная, указывающая, находится ли форма в режиме редактирования активного родственника.
+ * @type {Ref<boolean>}
+ */
+const isEditing = ref(true);
+
+/**
+ * Ref-переменная, указывающая, был ли компонент инициализирован (например, после загрузки данных).
+ * @type {Ref<boolean>}
+ */
+const isInitialized = ref(false);
+
+/**
+ * Функция для эмита событий компонентом.
+ * @type {Function}
+ * @fires close - Событие, вызываемое при необходимости закрыть компонент (например, модальное окно).
+ */
+const emit = defineEmits(["close"]);
+
+/**
+ * Асинхронная загрузка и установка типов родственников в хранилище.
+ * Использует `useAsyncData` для предотвращения повторных запросов и кэширования.
+ * @type {Object}
+ * @property {Ref<Array<Object>>} data - Реактивная ссылка на загруженные данные (типы родственников).
+ * @property {Ref<boolean>} pending - Флаг, указывающий, находится ли запрос в процессе выполнения.
+ * @property {Ref<Error|null>} error - Ошибка, если запрос не удался.
+ * @property {Function} refresh - Функция для принудительного обновления данных.
+ */
+const { data: relativeTypesData } = await useAsyncData("relativeTypes", () =>
+  $services.relatives.initializeRelativeTypes(relativesStore.setRelativesTypes),
+);
+
+/**
+ * Вычисляемое свойство для получения разделенных секций родственников (до активного, активный, после активного).
+ * Используется для удобного рендеринга списка родственников в шаблоне.
+ * @type {ComputedRef<Object>}
+ * @returns {{before: Array<Object>, active: Object|null, after: Array<Object>}} Объект с секциями родственников.
  */
 const relativeSections = computed(() => {
   if (!relativesStore.relatives || relativesStore.relatives.length === 0) {
@@ -100,8 +202,10 @@ const relativeSections = computed(() => {
 });
 
 /**
- * @computed
- * @returns {Object} Текущий временный родственник
+ * Вычисляемое свойство, предоставляющее доступ к данным текущего активного родственника из временного кэша.
+ * Реагирует на изменение `relativesStore.currentRelativeId`.
+ * @type {ComputedRef<Object|undefined>}
+ * @returns {Object|undefined} Объект текущего временного родственника или undefined, если он не найден.
  */
 const currentTempRelative = computed(() => {
   const result = getTempRelative(relativesStore.currentRelativeId);
@@ -109,8 +213,10 @@ const currentTempRelative = computed(() => {
 });
 
 /**
- * @computed
- * @returns {String} Текст для кнопки добавления родственника
+ * Вычисляемое свойство для получения текста кнопки добавления родственника.
+ * Текст зависит от текущего количества родственников и максимального лимита.
+ * @type {ComputedRef<string>}
+ * @returns {string} Текст для кнопки добавления.
  */
 const addRelativeText = computed(() => {
   return $services.relatives.getAddRelativeButtonText(
@@ -120,9 +226,10 @@ const addRelativeText = computed(() => {
 });
 
 /**
- * Получает временные данные родственника по индексу
- * @param {number} indexOrId - Индекс родственника (начиная с 1) или ID
- * @returns {Object} Данные родственника
+ * Получает временные данные родственника из кэша `tempRelatives` по его ID или индексу.
+ * Если данные отсутствуют в кэше, они запрашиваются из сервиса `relatives.getTempRelativeData`.
+ * @param {string|number} indexOrId - ID или индекс родственника.
+ * @returns {Object} Объект с данными родственника из временного кэша.
  */
 const getTempRelative = (indexOrId) => {
   return $services.relatives.getTempRelativeData(
@@ -133,7 +240,9 @@ const getTempRelative = (indexOrId) => {
 };
 
 /**
- * Переключает режим редактирования
+ * Асинхронно переключает состояние редактирования активного родственника.
+ * @param {boolean} value - Новое состояние режима редактирования (true - включить, false - выключить).
+ * @returns {Promise<void>} Promise, который разрешается после обновления DOM (если value === true).
  */
 const toggleEditing = async (value) => {
   if (value === true) {
@@ -143,7 +252,73 @@ const toggleEditing = async (value) => {
 };
 
 /**
- * Добавляет нового родственника
+ * Выполняет массив действий, полученных от сервисного слоя.
+ * Каждое действие - это объект с полем `type` и опциональными полями `value`, `values`, `message`.
+ * @param {Array<Object>} actions - Массив объектов действий.
+ * @example executeActions([{ type: 'setEditing', value: false }, { type: 'resetForm', values: {} }])
+ */
+const executeActions = (actions) => {
+  actions.forEach((action) => {
+    switch (action.type) {
+      case "error":
+        console.error(action.message || action.reason);
+        break;
+      case "warning":
+        console.warn(action.message);
+        break;
+      case "setEditing":
+        isEditing.value = action.value;
+        break;
+      case "setCurrentRelativeId":
+        relativesStore.currentRelativeId = action.value;
+        break;
+      case "setShowOneMore":
+        showOneMoreRelative.value = action.value;
+        break;
+      case "resetForm":
+        resetForm({ values: action.values });
+        break;
+      case "addOneMore":
+        addOneMoreRelatives();
+        break;
+      case "setInitialized":
+        isInitialized.value = action.value;
+        break;
+    }
+  });
+};
+
+/**
+ * Форматирует отображаемое имя родственника (Имя + Фамилия).
+ * Не используется в текущем шаблоне для сохранения раздельной стилизации, но доступна для использования.
+ * @param {Object} relative - Объект родственника.
+ * @returns {string} Отформартированное полное имя.
+ */
+const formatRelativeName = (relative) => {
+  return relativeEntity.formatDisplayName(relative);
+};
+
+/**
+ * Вычисляет корректный ключ для элемента списка родственников (для использования в `v-for`).
+ * @param {Object} item - Объект родственника.
+ * @param {string} section - Наименование секции ('before' или 'after'), где находится элемент.
+ * @param {number} index - Индекс элемента внутри его секции.
+ * @returns {string|number} Уникальный ключ для элемента.
+ */
+const getItemIndex = (item, section, index) => {
+  return $services.relatives.calculateItemIndex(
+    item,
+    relativeSections.value.before,
+    index,
+    section,
+  );
+};
+
+/**
+ * Обрабатывает клик по кнопке добавления/сохранения родственника.
+ * Вызывает сервис для валидации и добавления/обновления данных.
+ * @async
+ * @returns {Promise<void>}
  */
 const handleAddRelativeButtonClick = async () => {
   const result = await $services.relatives.handleAddRelativeWithValidation({
@@ -157,31 +332,17 @@ const handleAddRelativeButtonClick = async () => {
     maxLimit: relativesConstants.MAX_QUANTITY_RELATIVES,
   });
 
-  if (!result.success) {
-    return; // Прерываем выполнение, если операция не удалась
-  }
+  const { actions, shouldContinue } =
+    $services.relatives.handleActionResult(result);
+  if (!shouldContinue) return;
 
-  // Обрабатываем результат
-  if (result.shouldCloseEditing) {
-    isEditing.value = false;
-  }
-
-  if (result.newIndex) {
-    relativesStore.currentRelativeId = result.newIndex;
-    showOneMoreRelative.value = true;
-  }
-
-  if (result.formValues) {
-    resetForm({ values: result.formValues });
-  }
-
-  if (result.shouldOpenEditing) {
-    isEditing.value = true;
-  }
+  executeActions(actions);
 };
 
 /**
- * Добавляет нового родственника
+ * Добавляет нового пустого родственника и переключает форму на его редактирование.
+ * @async
+ * @returns {Promise<void>}
  */
 const addOneMoreRelatives = async () => {
   const result = $services.relatives.addNewRelative(
@@ -193,20 +354,21 @@ const addOneMoreRelatives = async () => {
     return;
   }
 
-  // Устанавливаем новый относительный индекс
-  relativesStore.currentRelativeId = result.newIndex;
-  showOneMoreRelative.value = true;
+  const actions = [
+    { type: "setCurrentRelativeId", value: result.newIndex },
+    { type: "setShowOneMore", value: true },
+    { type: "resetForm", values: $services.relatives.getEmptyFormValues() },
+    { type: "setEditing", value: true },
+  ];
 
-  resetForm({
-    values: $services.relatives.getEmptyFormValues(),
-  });
-
-  // Обновляем DOM перед применением маски
-  isEditing.value = true;
+  executeActions(actions);
 };
 
 /**
- * Изменяет режим редактирования для родственника
+ * Переключает режим редактирования на выбранного родственника.
+ * @async
+ * @param {string|number} index - ID или индекс родственника для редактирования.
+ * @returns {Promise<void>}
  */
 const changeEdit = async (index) => {
   const result = $services.relatives.handleEditModeSwitch({
@@ -221,34 +383,41 @@ const changeEdit = async (index) => {
   });
 
   if (result.success) {
-    relativesStore.currentRelativeId = result.newRelativeId;
-
+    const { actions } = $services.relatives.handleActionResult(result);
+    executeActions(actions);
     if (result.shouldOpenEditing) {
       toggleEditing(true);
     }
-
-    resetForm({
-      values: result.formValues,
-    });
   }
 };
 
+/**
+ * Устанавливает данные формы для несохраненного родственника (родственника без ID).
+ * @param {number} index - Индекс несохраненного родственника в массиве.
+ * @param {Object} relative - Объект несохраненного родственника.
+ */
 function setFormToUnsavedRelative(index, relative) {
   const result = $services.relatives.prepareUnsavedRelativeData(
     index,
     relative,
   );
 
-  relativesStore.currentRelativeId = result.currentRelativeId;
-  resetForm({
-    values: result.formValues,
-  });
+  const actions = [
+    { type: "setCurrentRelativeId", value: result.currentRelativeId },
+    { type: "resetForm", values: result.formValues },
+  ];
 
   if (result.shouldOpenEditing) {
-    isEditing.value = true;
+    actions.push({ type: "setEditing", value: true });
   }
+
+  executeActions(actions);
 }
 
+/**
+ * Проверяет наличие несохраненного родственника и, если он есть, переключает форму на его редактирование.
+ * В противном случае, добавляет нового пустого родственника.
+ */
 function handleUnsavedRelative() {
   const unsavedData = $services.relatives.findUnsavedRelative(
     relativesStore.relatives,
@@ -262,7 +431,11 @@ function handleUnsavedRelative() {
 }
 
 /**
- * Добавляет родственника в хранилище
+ * Сохраняет данные текущего активного родственника в хранилище Pinia.
+ * Вызывает сервис для валидации и сохранения.
+ * @async
+ * @param {string|number} activeIndex - ID или индекс активного родственника для сохранения.
+ * @returns {Promise<void>}
  */
 const addRelativeToStore = async (activeIndex) => {
   const result = await $services.relatives.saveActiveAndAddNew({
@@ -275,33 +448,19 @@ const addRelativeToStore = async (activeIndex) => {
     maxLimit: relativesConstants.MAX_QUANTITY_RELATIVES,
   });
 
-  if (!result.success) {
-    if (result.reason === "no_active_relative") {
-      console.error("Нет активного родственника для обновления");
-    } else if (result.error) {
-      throw result.error;
-    }
-    return;
-  }
+  const { actions, shouldContinue } =
+    $services.relatives.handleActionResult(result);
+  if (!shouldContinue) return;
 
-  // Обрабатываем результат
-  if (result.newIndex) {
-    relativesStore.currentRelativeId = result.newIndex;
-  }
-
-  if (result.formValues) {
-    resetForm({ values: result.formValues });
-  }
-
-  if (result.shouldOpenEditing) {
-    isEditing.value = true;
-  } else if (result.shouldCloseEditing) {
-    isEditing.value = false;
-  }
+  executeActions(actions);
 };
 
 /**
- * Удаляет родственника
+ * Удаляет родственника по указанному ID или индексу.
+ * Вызывает сервис для удаления и обработки состояния после удаления.
+ * @async
+ * @param {string|number} index - ID или индекс родственника для удаления.
+ * @returns {Promise<void>}
  */
 const deleteRelative = async (index) => {
   const result = $services.relatives.handleRelativeDeletion({
@@ -312,107 +471,39 @@ const deleteRelative = async (index) => {
     addOneMoreRelatives,
   });
 
-  if (!result.success) {
-    if (result.reason === "relative_not_found") {
-      console.error(result.message);
-    }
-    return;
-  }
+  const { actions, shouldContinue } =
+    $services.relatives.handleDeletionResult(result);
+  if (!shouldContinue) return;
 
-  // Обрабатываем результат на основе действия
-  const { nextActive } = result;
-
-  switch (nextActive.action) {
-    case "add_new":
-      addOneMoreRelatives();
-      break;
-
-    case "switch_to_unsaved":
-      relativesStore.currentRelativeId = nextActive.currentRelativeId;
-      resetForm({ values: nextActive.formValues });
-      if (nextActive.shouldOpenEditing) {
-        toggleEditing(true);
-      }
-      break;
-
-    case "switch_to_first":
-      relativesStore.currentRelativeId = nextActive.currentRelativeId;
-      resetForm({ values: nextActive.formValues });
-      if (nextActive.shouldCloseEditing) {
-        toggleEditing(false);
-      }
-      break;
-  }
+  executeActions(actions);
 };
 
 /**
- * Получает тип родственника по ID
+ * Получает отображаемое имя типа родственника по его ID.
+ * @param {number} relativeTypeId - ID типа родственника.
+ * @returns {string|undefined} Имя типа родственника или undefined, если тип не найден.
  */
-const setRelativeTypeById = (relativeId) => {
+const setRelativeTypeById = (relativeTypeId) => {
   return $services.relatives.getRelativeTypeById(
     relativesStore?.relativesTypes,
-    relativeId,
+    relativeTypeId,
   );
 };
 
 /**
- * Устанавливает данные для редактирования
- */
-const setEditRelative = () => {
-  const result = $services.relatives.handleFullInitialization({
-    actionType: props.actionType,
-    resetStore: relativesStore.reset,
-    clearTempCache: $services.relatives.clearTempRelativesCache,
-    setRelativeOfEdit: relativesStore.setRelativeOfEdit,
-    tempRelatives,
-    addOneMoreRelatives,
-  });
-
-  // Обрабатываем результат инициализации
-  switch (result.action) {
-    case "add_new":
-    case "add_new_client":
-    case "add_new_fallback":
-      if (result.shouldAddNew) {
-        addOneMoreRelatives();
-      }
-      if (result.warning) {
-        console.warn(result.warning);
-      }
-      break;
-
-    case "set_first_relative":
-      relativesStore.currentRelativeId = result.currentRelativeId;
-
-      if (result.shouldCloseEditing) {
-        toggleEditing(false);
-      }
-
-      // Получаем данные из временного кэша для текущего родственника
-      const currentRelativeData = getTempRelative(
-        relativesStore.currentRelativeId,
-      );
-
-      // Сбрасываем форму с данными текущего родственника
-      resetForm({
-        values: $services.relatives.getRelativeFormValues(currentRelativeData),
-      });
-      break;
-
-    case "no_action":
-      // Ничего не делаем
-      break;
-  }
-};
-
-/**
- * Закрывает модальное окно
+ * Эмитирует событие `close`, сигнализируя родительскому компоненту о необходимости закрыться.
  */
 const close = () => {
   emit("close");
 };
 
-// Отслеживаем изменения в семье клиента
+/**
+ * Watcher для отслеживания изменений пропса `actionType`.
+ * При изменении `actionType` выполняет полную реинициализацию состояния компонента,
+ * включая сброс хранилища Pinia, очистку временного кэша и обработку новых данных.
+ * Использует `immediate: true` для запуска при монтировании и `deep: true` для отслеживания вложенных изменений.
+ * @param {ActionTypeProp} newActionType - Новое значение пропса `actionType`.
+ */
 watch(
   () => props.actionType,
   (newActionType) => {
@@ -425,46 +516,36 @@ watch(
       addOneMoreRelatives,
     });
 
-    // Обрабатываем результат инициализации
-    switch (result.action) {
-      case "add_new":
-      case "add_new_client":
-      case "add_new_fallback":
-        if (result.shouldAddNew) {
-          addOneMoreRelatives();
-        }
-        break;
-
-      case "set_first_relative":
-        relativesStore.currentRelativeId = result.currentRelativeId;
-
-        if (result.formValues) {
-          resetForm({ values: result.formValues });
-        }
-
-        if (result.shouldCloseEditing) {
-          isEditing.value = false;
-        }
-        break;
-    }
-
-    isInitialized.value = true;
+    const { actions } = $services.relatives.handleInitializationResult(
+      result,
+      getTempRelative,
+    );
+    executeActions(actions);
   },
   { immediate: true, deep: true },
 );
 
-// Отслеживаем изменения в списке родственников
+/**
+ * Watcher для отслеживания изменения длины массива родственников в хранилище Pinia.
+ * Если массив родственников становится пустым и компонент уже был инициализирован,
+ * автоматически добавляет нового пустого родственника для редактирования.
+ * @param {number} newLength - Новая длина массива `relativesStore.relatives`.
+ */
 watch(
   () => relativesStore.relatives.length,
   (newLength) => {
-    // Если список стал пуст и компонент уже инициализирован, открываем форму
     if (newLength === 0 && isInitialized.value) {
       addOneMoreRelatives();
     }
   },
 );
 
-// Инициализация компонента
+/**
+ * Lifecycle hook, вызываемый после монтирования компонента.
+ * Проверяет, нужно ли инициализировать компонент добавлением первого пустого родственника,
+ * если это не было сделано watcher-ом `actionType` (например, при type: 'add' без pre-loaded данных).
+ * @async
+ */
 onMounted(async () => {
   const initCheck = $services.relatives.shouldInitializeOnMount({
     isInitialized: isInitialized.value,
@@ -479,12 +560,23 @@ onMounted(async () => {
   await nextTick();
 });
 
+/**
+ * Вычисляемое свойство для работы с маскированным телефонным номером.
+ * Обеспечивает двустороннюю привязку (v-model) к полю ввода телефона,
+ * автоматически применяя и удаляя маску.
+ * @type {ComputedRef<string>}
+ * @property {function} get - Возвращает маскированный номер телефона для отображения.
+ * @property {function} set - Принимает маскированное значение, удаляет маску и сохраняет чистое значение.
+ */
 const maskedTelephone = computed({
   get() {
-    return maskPhone(currentTempRelative.value.telephone || "");
+    return maskPhone(currentTempRelative.value?.telephone || "");
   },
   set(val) {
-    currentTempRelative.value.telephone = unmaskPhone(val);
+    if (currentTempRelative.value) {
+      currentTempRelative.value.telephone = unmaskPhone(val);
+      // Можно добавить валидацию: relativeEntity.isValidTelephone(unmaskPhone(val))
+    }
   },
 });
 </script>
@@ -518,7 +610,7 @@ const maskedTelephone = computed({
           </div>
           <div
             v-for="(item, index) in relativeSections.before"
-            :key="item.id || 'before-' + (index + 1)"
+            :key="relativeEntity.createRelativeKey(item, index, 'before')"
             class="card-table__table-tr"
           >
             <div class="card-table__table-td card-table--name">
@@ -534,11 +626,7 @@ const maskedTelephone = computed({
                   class="card-table__actions--edit"
                   src="/icons/edit.svg"
                   alt=""
-                  @click="
-                    changeEdit(
-                      item.id || relativeSections.before.indexOf(item) + 1,
-                    )
-                  "
+                  @click="changeEdit(getItemIndex(item, 'before', index))"
                 />
               </div>
             </div>
@@ -705,7 +793,7 @@ const maskedTelephone = computed({
           </div>
           <div
             v-for="(item, index) in relativeSections.after"
-            :key="item.id || 'after-' + (index + 1)"
+            :key="relativeEntity.createRelativeKey(item, index, 'after')"
             class="card-table__table-tr"
           >
             <div class="card-table__table-td card-table--name">
@@ -721,11 +809,7 @@ const maskedTelephone = computed({
                   class="card-table__actions--edit"
                   src="/icons/edit.svg"
                   alt=""
-                  @click="
-                    changeEdit(
-                      item.id || relativeSections.before.length + 1 + index + 1,
-                    )
-                  "
+                  @click="changeEdit(getItemIndex(item, 'after', index))"
                 />
               </div>
             </div>
