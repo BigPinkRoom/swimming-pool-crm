@@ -1,3 +1,7 @@
+/** * @file Компонент верхнего уровня для добавления или редактирования
+информации о клиенте/семье. * Объединяет в себе компоненты для поиска
+существующей семьи, добавления/редактирования клиентов, * родственников и
+абонементов. */
 <script setup>
 import vCheckbox from "@/components/ui/Checkboxes/MainCheckbox";
 import FieldsetSearch from "./components/Search.vue";
@@ -6,16 +10,41 @@ import FieldsetAbonements from "./components/AddGroupAbonements";
 import FieldsetRelatives from "./components/AddGroupRelatives";
 import { ref, computed } from "vue";
 
+/**
+ * Пропсы компонента.
+ * @typedef {Object} Props
+ * @property {Object} [actionType] - Объект, определяющий тип действия (например, добавление, редактирование) и исходные данные.
+ * @property {string} [actionType.type] - Тип действия (например, 'add', 'edit').
+ * @property {string} [actionType.source] - Источник данных (например, 'search', если семья выбрана из поиска).
+ * @property {Object} [actionType.family] - Данные семьи, если они передаются для редактирования или были выбраны.
+ */
 const props = defineProps({
   actionType: { type: Object },
 });
 
+/**
+ * Определяет события, которые компонент может эмитировать.
+ * @property {function(Object): void} submit - Событие, возникающее при отправке формы (в данном коде не используется напрямую, но может быть предусмотрено для будущей логики отправки всей формы).
+ * @property {function(Object): void} family-data-updated - Событие, возникающее при обновлении данных семьи, например, после выбора семьи из поиска.
+ */
 const emit = defineEmits(["submit", "family-data-updated"]);
 
+/**
+ * Реактивная ссылка на DOM-элемент формы.
+ * @type {import('vue').Ref<HTMLFormElement | null>}
+ */
 const formRef = ref(null);
 
+/**
+ * Реактивная переменная, определяющая, следует ли отображать секцию с абонементами.
+ * @type {import('vue').Ref<boolean>}
+ */
 const showAbonements = ref(true);
 
+/**
+ * Вычисляемое свойство, определяющее, была ли семья выбрана из результатов поиска.
+ * @type {import('vue').ComputedRef<boolean>}
+ */
 const isFamilyFromSearch = computed(() => {
   return (
     props.actionType?.source === "search" ||
@@ -24,21 +53,22 @@ const isFamilyFromSearch = computed(() => {
   );
 });
 
+/**
+ * Обработчик изменения состояния чекбокса для отображения/скрытия секции абонементов.
+ * @param {boolean} value - Новое состояние чекбокса (true - отмечен, false - не отмечен).
+ */
 const checkboxAbonementHandler = (value) => {
   showAbonements.value = value;
 };
 
+/**
+ * Обработчик события `family-selected` от компонента `FieldsetSearch`.
+ * Передает данные выбранной семьи родительскому компоненту через событие `family-data-updated`.
+ * @param {Object} familyData - Данные выбранной семьи.
+ */
 const handleFamilySelectedFromSearch = (familyData) => {
   emit("family-data-updated", familyData);
 };
-
-// const submitForm = () => {
-//   emit("submit");
-// };
-
-// defineExpose({
-//   submitForm,
-// });
 </script>
 
 <template>
@@ -69,7 +99,7 @@ const handleFamilySelectedFromSearch = (familyData) => {
           $t(
             `forms.client.${
               actionType?.type || 'add'
-            }.fields.abonementBinding.label`
+            }.fields.abonementBinding.label`,
           )
         "
         checked
