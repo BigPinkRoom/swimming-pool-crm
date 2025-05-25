@@ -1,21 +1,59 @@
+/** * @file Компонент поиска и выбора существующей семьи. * Позволяет
+пользователю искать семьи по ФИО или номеру телефона и выбирать семью из
+результатов поиска. * При выборе семьи, компонент эмитирует событие
+`family-selected` с данными выбранной семьи. */
 <script setup>
 import CardTable from "@/components/Common/CardTable.vue";
 import { searchValidationSchema } from "@/schemas/zod/searchScemas";
 import { useRelativesStore } from "@/stores/relativeStore";
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, onMounted } from "vue";
 import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
+import SearchService from "@/services/modules/search.js";
 
-const { $i18n } = useNuxtApp();
+const { $i18n, $services } = useNuxtApp();
 const t = $i18n.t;
-const { $services } = useNuxtApp();
 
+/**
+ * Хранилище данных о типах родственников.
+ * @type {import('@/stores/relativeStore').RelativesStoreReturnType}
+ */
 const relativesStore = useRelativesStore();
 
+/**
+ * Определяет события, которые компонент может эмитировать.
+ * @property {function(Object): void} family-selected - Событие, возникающее при выборе семьи. Передает данные выбранной семьи.
+ */
 const emit = defineEmits(["family-selected"]);
 
+/**
+ * Экземпляр сервиса для выполнения операций поиска и получения данных о семье.
+ * @type {SearchService | null}
+ */
+let searchServiceInstance = null;
+
+/**
+ * Хук жизненного цикла Vue. Вызывается после монтирования компонента.
+ * Инициализирует экземпляр `SearchService`.
+ */
+onMounted(() => {
+  searchServiceInstance = new SearchService({ $services, relativesStore });
+});
+
+/**
+ * Схема валидации Zod, преобразованная для использования с vee-validate.
+ * @type {import('zod').ZodSchema}
+ */
 const validationSchema = toTypedSchema(searchValidationSchema(t));
 
+/**
+ * Функции и состояние, предоставляемые `vee-validate` для управления формой.
+ * @property {Object} errors - Объект с ошибками валидации полей формы.
+ * @property {Object} values - Объект со значениями полей формы.
+ * @property {Object} meta - Метаданные формы (например, dirty, valid).
+ * @property {function(): Promise<{valid: boolean}>} validate - Функция для запуска валидации формы.
+ * @property {function} resetForm - Функция для сброса состояния формы к начальным значениям.
+ */
 const { errors, values, meta, validate, resetForm } = useForm({
   validationSchema,
   initialValues: {
@@ -23,111 +61,88 @@ const { errors, values, meta, validate, resetForm } = useForm({
   },
 });
 
+/**
+ * Реактивная переменная, хранящая текущую поисковую строку.
+ * @type {import('vue').Ref<string>}
+ */
 const search = ref("");
+
+/**
+ * Реактивная переменная, хранящая результаты поиска семей.
+ * @type {import('vue').Ref<Array<Object>>}
+ */
 const searchResult = ref([]);
+
+/**
+ * Реактивная переменная, управляющая видимостью/сворачиванием списка результатов поиска.
+ * @type {import('vue').Ref<boolean>}
+ */
 const isListCollapsing = ref(true);
 
-const getSearch = async (searchString) => {
-  const resultSearch = await $services.families.search({ searchString });
-  return resultSearch;
-};
-
+/**
+ * Получает текстовое представление типа родственника по его идентификатору.
+ * @param {number | string} relativeTypeId - Идентификатор типа родственника.
+ * @returns {string} Текстовое представление типа родственника или пустая строка, если не найдено.
+ */
 const getRelativeType = (relativeTypeId) => {
-  const relativesType = relativesStore.relativesTypes.find((item) => {
-    return Number(item.value) === Number(relativeTypeId);
-  });
-  return relativesType?.text;
+  return searchServiceInstance?.getRelativeTypeLabel(relativeTypeId) || "";
 };
 
+/**
+ * Получает текстовое представление пола по его идентификатору.
+ * @param {number | string} genderId - Идентификатор пола.
+ * @returns {string} Текстовое представление пола или пустая строка, если не найдено.
+ */
 const getGender = (genderId) => {
-  const foundGender = gender.find((item) => {
-    return Number(item.value) === Number(genderId);
-  });
-  return foundGender?.label;
+  return searchServiceInstance?.getGenderLabel(genderId) || "";
 };
 
-const gender = reactive([
-  { id: 0, value: 0, label: "Сын" },
-  { id: 1, value: 1, label: "Дочка" },
-]);
-
+/**
+ * Выполняет поиск семей на основе текущей поисковой строки.
+ * Обновляет `searchResult` и `isListCollapsing`.
+ * @async
+ */
 const searchFamily = async () => {
   const resultValidate = await validate();
   if (resultValidate.valid) {
-    const newResults = await getSearch(search.value);
-    searchResult.value = newResults || [];
-    if (searchResult.value.length > 0) {
-      isListCollapsing.value = false;
+    if (searchServiceInstance) {
+      const newResults = await searchServiceInstance.searchFamilies(
+        search.value,
+      );
+      searchResult.value = newResults;
+      isListCollapsing.value = newResults.length === 0;
     } else {
+      console.warn("Search service not initialized yet");
+      searchResult.value = [];
       isListCollapsing.value = true;
     }
   } else {
-    if (!search.value && searchResult.value.length === 0) {
-      isListCollapsing.value = true;
-    } else if (searchResult.value.length > 0) {
-      isListCollapsing.value = false;
-    } else if (search.value && searchResult.value.length === 0) {
-      isListCollapsing.value = true;
-    }
+    isListCollapsing.value = !search.value || searchResult.value.length === 0;
   }
 };
 
+/**
+ * Обрабатывает выбор семьи из списка результатов.
+ * Получает полные данные о выбранной семье и эмитирует событие `family-selected`.
+ * Сбрасывает состояние поиска.
+ * @async
+ * @param {Object} element - Объект с краткой информацией о выбранной семье из результатов поиска.
+ */
 const selectFamilyAndEmit = async (element) => {
-  const selectedFamilyData = {
-    id: element._id,
-    clients: [],
-    relatives: [],
-    abonements: [],
-  };
+  if (searchServiceInstance) {
+    const selectedFamilyData =
+      await searchServiceInstance.fetchAndPrepareFamilyDetails(element);
+    emit("family-selected", selectedFamilyData);
 
-  if (element.clients) {
-    for (const item of element.clients) {
-      const clientDataArray = await $services.clients.getClientById(
-        item.client_id
-      );
-      if (clientDataArray && clientDataArray.length > 0) {
-        const clientData = clientDataArray[0];
-        selectedFamilyData.clients.push({
-          id: clientData.client_id,
-          name: clientData.name,
-          surname: clientData.surname,
-          patronymic: clientData.patronymic,
-          birthday: clientData.birthday,
-          gender: clientData.gender,
-        });
-      }
-    }
+    isListCollapsing.value = true;
+    searchResult.value = [];
+    search.value = "";
+    resetForm();
+  } else {
+    console.warn(
+      "Search service not initialized yet during selectFamilyAndEmit",
+    );
   }
-
-  if (element.relatives) {
-    for (const item of element.relatives) {
-      const relativeDataArray = await $services.relatives.getRelativeById(
-        item.relative_id
-      );
-      if (relativeDataArray && relativeDataArray.length > 0) {
-        const relativeData = relativeDataArray[0];
-        selectedFamilyData.relatives.push({
-          id: relativeData.relative_id,
-          name: relativeData.name,
-          surname: relativeData.surname,
-          patronymic: relativeData.patronymic,
-          relativeTypeId: relativeData.relative_type_id,
-          telephone: relativeData.telephone,
-        });
-      }
-    }
-  }
-
-  if (element.abonements) {
-    selectedFamilyData.abonements = [...element.abonements];
-  }
-
-  emit("family-selected", selectedFamilyData);
-
-  isListCollapsing.value = true;
-  searchResult.value = [];
-  search.value = "";
-  resetForm();
 };
 </script>
 
@@ -407,7 +422,9 @@ const selectFamilyAndEmit = async (element) => {
 }
 
 .search-item-animation-leave-active {
-  transition: opacity 0.5s ease, transform 0.5s ease;
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s ease;
   position: relative;
   z-index: 1;
 }
@@ -420,9 +437,13 @@ const selectFamilyAndEmit = async (element) => {
 .search-results-list {
   max-height: 80rem;
 
-  transition: max-height 0.5s ease-in-out, min-height 0.5s ease-in-out,
-    padding-top 0.5s ease-in-out, padding-bottom 0.5s ease-in-out,
-    padding-left 0.5s ease-in-out, padding-right 0.5s ease-in-out;
+  transition:
+    max-height 0.5s ease-in-out,
+    min-height 0.5s ease-in-out,
+    padding-top 0.5s ease-in-out,
+    padding-bottom 0.5s ease-in-out,
+    padding-left 0.5s ease-in-out,
+    padding-right 0.5s ease-in-out;
 
   &.is-collapsing {
     max-height: 0 !important;
