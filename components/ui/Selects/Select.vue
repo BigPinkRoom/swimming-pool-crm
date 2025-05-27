@@ -2,41 +2,93 @@
 import { uuid } from "vue-uuid";
 import { useField } from "vee-validate";
 
+/**
+ * @typedef {Object} Option
+ * @property {string|number} value - Значение опции.
+ * @property {string} text - Отображаемый текст опции.
+ * @property {boolean} [disabled] - Флаг, указывающий, отключена ли опция.
+ */
+
+/**
+ * Компонент Select для отображения выпадающего списка.
+ * @vue-prop {string|number} [id] - Уникальный идентификатор для поля выбора и метки.
+ * @vue-prop {string} [name] - Имя поля, используемое для валидации с vee-validate.
+ * @vue-prop {string} [title=""] - Заголовок поля выбора.
+ * @vue-prop {Array<Option>} optionsList - Список опций для отображения в выпадающем списке.
+ * @vue-prop {string} [errorSubmit] - Сообщение об ошибке, передаваемое извне (например, при отправке формы).
+ * @vue-prop {string} [successMessage=""] - Сообщение об успешной валидации.
+ * @vue-prop {string|number} [modelValue="1"] - Текущее выбранное значение.
+ * @vue-prop {string} [placeholder=""] - Текст плейсхолдера для поля выбора.
+ * @vue-prop {boolean} [disabled=false] - Флаг, указывающий, отключено ли поле выбора.
+ * @vue-emit update:modelValue - Событие, возникающее при изменении выбранного значения.
+ */
 const props = defineProps({
+  /**
+   * Уникальный идентификатор для поля выбора и метки.
+   */
   id: {
     type: [String, Number],
   },
+  /**
+   * Имя поля, используемое для валидации с vee-validate.
+   */
   name: {
     type: String,
   },
+  /**
+   * Заголовок поля выбора.
+   */
   title: {
     type: String,
     default: () => "",
   },
+  /**
+   * Список опций для отображения в выпадающем списке.
+   * @type {Array<Option>}
+   */
   optionsList: {
     type: Array,
   },
+  /**
+   * Сообщение об ошибке, передаваемое извне (например, при отправке формы).
+   */
   errorSubmit: {
     type: String,
   },
+  /**
+   * Сообщение об успешной валидации.
+   */
   successMessage: {
     type: String,
     default: "",
   },
+  /**
+   * Текущее выбранное значение.
+   */
   modelValue: {
     type: [String, Number],
     default: "1",
   },
+  /**
+   * Текст плейсхолдера для поля выбора.
+   */
   placeholder: {
     type: String,
     default: "",
   },
+  /**
+   * Флаг, указывающий, отключено ли поле выбора.
+   */
   disabled: {
     type: Boolean,
     default: false,
   },
 });
 
+/**
+ * @vue-emit update:modelValue - Событие, возникающее при изменении выбранного значения.
+ * @param {string|number} value - Новое выбранное значение.
+ */
 const emit = defineEmits(["update:modelValue"]);
 
 const { value, errorMessage, meta } = useField(props.name || "", undefined, {

@@ -1,4 +1,23 @@
 <script setup>
+/**
+ * @file Компонент радиокнопок.
+ * @vue/component
+ */
+
+/**
+ * @typedef {Object} RadioButtonData
+ * @property {string | number} id - Уникальный идентификатор кнопки.
+ * @property {string | number} value - Значение кнопки.
+ * @property {string} label - Текст метки для кнопки.
+ */
+
+/**
+ * Props компонента.
+ * @vue-prop {RadioButtonData[]} inputData - Массив объектов для создания радиокнопок. Обязательный.
+ * @vue-prop {string} [name] - Имя для группы радиокнопок.
+ * @vue-prop {string} [direction="row"] - Направление отображения радиокнопок ("row" или "column").
+ * @vue-prop {string | number} modelValue - Текущее выбранное значение. Обязательный.
+ */
 const props = defineProps({
   inputData: {
     type: Array,
@@ -19,12 +38,24 @@ const props = defineProps({
   },
 });
 
+/**
+ * Emits компонента.
+ * @vue-event {string | number} update:modelValue - Событие, возникающее при изменении выбранного значения.
+ */
 const emit = defineEmits(["update:modelValue"]);
 
+/**
+ * Обновляет значение модели.
+ * @param {string | number} value - Новое значение.
+ */
 const updateValue = (value) => {
   emit("update:modelValue", value);
 };
 
+/**
+ * Возвращает объект с классами для корневого элемента в зависимости от направления.
+ * @returns {Object} Объект с CSS-классами.
+ */
 const classObject = () => {
   const obj = {
     "radio-button_row": props.direction === "row",
