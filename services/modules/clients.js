@@ -6,12 +6,12 @@ import Cleave from "cleave.js";
 /**
  * Класс Clients управляет списком клиентов в приложении.
  * Он предоставляет методы для создания, поиска, удаления и управления клиентами.
+ * @class Clients
  */
 export default class Clients {
   /**
    * Создает экземпляр класса Clients.
-   * @param {Object} options - Параметры инициализации.
-   * @param {Object} options.context - Контекст приложения (например, Nuxt контекст).
+   * @param {Object} context - Контекст приложения (например, Nuxt context).
    */
   constructor(context) {
     /**
@@ -54,7 +54,7 @@ export default class Clients {
    * Проверяет, достигнуто ли максимальное количество клиентов.
    *
    * @param {Array<Object>} clients - Список клиентов.
-   * @param {number} maxLimit - Максимально допустимое количество клиентов (по умолчанию 10).
+   * @param {number} [maxLimit=10] - Максимально допустимое количество клиентов.
    * @returns {boolean} - Возвращает true, если лимит достигнут, иначе false.
    */
   isMaxClientsLimitReached = (clients, maxLimit = 10) => {
@@ -72,13 +72,15 @@ export default class Clients {
    *   - gender: Пол клиента (null по умолчанию).
    */
   createNewClient = () => {
-    return {
-      name: "",
-      surname: "",
-      patronymic: "",
-      birthday: "",
-      gender: null,
-    };
+    // Создаем объект через литерал для обеспечения правильного прототипа
+    const newClient = {};
+    newClient.name = "";
+    newClient.surname = "";
+    newClient.patronymic = "";
+    newClient.birthday = "";
+    newClient.gender = null;
+
+    return newClient;
   };
 
   /**
@@ -104,7 +106,7 @@ export default class Clients {
   /**
    * Получает путь к изображению в зависимости от пола
    * @param {number} gender - Пол клиента (0 - мальчик, 1 - девочка)
-   * @returns {string} Путь к изображению
+   * @returns {string} Путь к изображению или пустая строка, если пол не определен.
    */
   getGenderImage = (gender) => {
     switch (gender) {
@@ -119,36 +121,45 @@ export default class Clients {
 
   /**
    * Получает или создает временного клиента
-   * @param {Object} tempClients - Объект с временными клиентами
-   * @param {number} index - Индекс клиента (начиная с 1)
-   * @returns {Object} Данные клиента
+   * @param {Object} tempClients - Объект с временными клиентами, где ключи - индексы клиентов.
+   * @param {number} index - Индекс клиента (начиная с 1).
+   * @returns {Object} Данные клиента (name, surname, patronymic, birthday, gender).
    */
   getTempClient = (tempClients, index) => {
     if (!tempClients[index]) {
-      tempClients[index] = {
-        name: "",
-        surname: "",
-        patronymic: "",
-        birthday: "",
-        gender: 0,
-      };
+      // Создаем объект через литерал для обеспечения правильного прототипа
+      tempClients[index] = {};
+      tempClients[index].name = "";
+      tempClients[index].surname = "";
+      tempClients[index].patronymic = "";
+      tempClients[index].birthday = "";
+      tempClients[index].gender = 0;
     }
     return tempClients[index];
   };
 
   /**
    * Подготавливает данные клиента для редактирования
-   * @param {Object} client - Данные клиента
-   * @returns {Object} Подготовленные данные
+   * @param {Object} client - Данные клиента.
+   * @param {string} [client.clientName] - Имя клиента.
+   * @param {string} [client.clientSurname] - Фамилия клиента.
+   * @param {number} [client.clientGender=0] - Пол клиента.
+   * @param {string|Date} [client.clientBirthday] - Дата рождения клиента.
+   * @param {string} [client.clientPatronymic] - Отчество клиента.
+   * @param {number|string} [client.clientId] - ID клиента.
+   * @param {boolean} [client.isFirstClient] - Флаг первого клиента.
+   * @param {boolean} [client.is_first_client] - Альтернативный флаг первого клиента.
+   * @returns {Object} Подготовленные данные (name, surname, gender, birthday, patronymic, id?, isFirstClient?).
    */
   prepareClientForEdit = (client) => {
-    const clientForStore = {
-      name: client.clientName || "",
-      surname: client.clientSurname || "",
-      gender: client.clientGender || 0,
-      birthday: formatDate(client.clientBirthday) || "",
-      patronymic: client.clientPatronymic || "",
-    };
+    // Создаем объект через литерал для обеспечения правильного прототипа
+    const clientForStore = {};
+
+    clientForStore.name = client.clientName || "";
+    clientForStore.surname = client.clientSurname || "";
+    clientForStore.gender = client.clientGender || 0;
+    clientForStore.birthday = formatDate(client.clientBirthday) || "";
+    clientForStore.patronymic = client.clientPatronymic || "";
 
     if (client.clientId) {
       clientForStore.id = client.clientId;
@@ -165,20 +176,36 @@ export default class Clients {
 
   /**
    * Подготавливает данные клиента из семьи
-   * @param {Object} client - Данные клиента
-   * @returns {Object} Подготовленные данные
+   * @param {Object} client - Данные клиента из объекта семьи.
+   * @param {string} [client.name] - Имя клиента.
+   * @param {string} [client.surname] - Фамилия клиента.
+   * @param {string} [client.patronymic] - Отчество клиента.
+   * @param {string|Date} [client.birthday] - Дата рождения клиента.
+   * @param {number} [client.gender] - Пол клиента.
+   * @param {number|string} [client.id] - ID клиента.
+   * @param {number|string} [client.clientId] - Альтернативный ID клиента.
+   * @param {number|string} [client.client_id] - Еще один альтернативный ID клиента.
+   * @param {boolean} [client.isFirstClient] - Флаг первого клиента.
+   * @param {boolean} [client.is_first_client] - Альтернативный флаг первого клиента.
+   * @returns {Object} Подготовленные данные (name, surname, patronymic, birthday, gender, id?, isFirstClient?).
    */
   prepareFamilyClient = (client) => {
-    const clientForStore = {
-      name: client.name || "",
-      surname: client.surname || "",
-      patronymic: client.patronymic || "",
-      birthday: formatDate(client.birthday) || "",
-      gender: client.gender === undefined ? null : client.gender,
-    };
+    // Создаем объект через литерал для обеспечения правильного прототипа
+    const clientForStore = {};
 
+    clientForStore.name = client.name || "";
+    clientForStore.surname = client.surname || "";
+    clientForStore.patronymic = client.patronymic || "";
+    clientForStore.birthday = formatDate(client.birthday) || "";
+    clientForStore.gender = client.gender === undefined ? null : client.gender;
+
+    // Обрабатываем ID из разных источников
     if (client.id) {
       clientForStore.id = client.id;
+    } else if (client.clientId) {
+      clientForStore.id = client.clientId;
+    } else if (client.client_id) {
+      clientForStore.id = client.client_id;
     }
 
     if (client.isFirstClient !== undefined) {
@@ -190,6 +217,11 @@ export default class Clients {
     return clientForStore;
   };
 
+  /**
+   * Форматирует строку с датой в формат ДД.ММ.ГГГГ.
+   * @param {string|Date} dateString - Строка или объект Date для форматирования.
+   * @returns {string} Отформатированная дата или пустая строка в случае невалидной даты.
+   */
   formatDate(dateString) {
     const date = new Date(dateString);
 
@@ -205,6 +237,11 @@ export default class Clients {
     return `${day}.${month}.${year}`;
   }
 
+  /**
+   * Асинхронно получает данные клиента по его ID.
+   * @param {number|string} id - ID клиента.
+   * @returns {Promise<Object|null>} Промис, который разрешается с объектом клиента или null, если клиент не найден.
+   */
   getClientById = async (id) => {
     const params = {
       id,
@@ -216,11 +253,14 @@ export default class Clients {
 
   /**
    * Добавляет нового клиента в хранилище
-   * @param {Object} store - Хранилище клиентов
-   * @param {Object} tempClients - Временное хранилище клиентов
-   * @param {Function} resetForm - Функция сброса формы
-   * @param {Function} addInputMask - Функция добавления маски ввода
-   * @returns {Promise<void>}
+   * @param {Object} store - Хранилище клиентов (Pinia store).
+   * @param {Function} store.addEmpty - Метод хранилища для добавления пустого клиента.
+   * @param {number} store.currentClientId - Свойство хранилища для установки текущего ID клиента.
+   * @param {Array<Object>} store.clients - Массив клиентов в хранилище.
+   * @param {Object} tempClients - Временное хранилище клиентов (реактивный объект).
+   * @param {Function} resetForm - Функция сброса формы (например, из VeeValidate).
+   * @param {Function} addInputMask - Функция добавления маски ввода для поля даты.
+   * @returns {Promise<number|undefined>} Промис, который разрешается с индексом нового клиента или undefined, если достигнут лимит.
    */
   addOneMoreClient = async (store, tempClients, resetForm, addInputMask) => {
     if (this.isMaxClientsLimitReached(store.clients)) return;
@@ -255,14 +295,18 @@ export default class Clients {
 
   /**
    * Обрабатывает клик по кнопке добавления клиента
-   * @param {Object} store - Хранилище клиентов
-   * @param {Object} tempClients - Временное хранилище клиентов
-   * @param {Object} currentTempClient - Текущий временный клиент
-   * @param {Boolean} isEditing - Флаг режима редактирования
-   * @param {Function} resetForm - Функция сброса формы
-   * @param {Function} validate - Функция валидации формы
-   * @param {Function} addInputMask - Функция добавления маски ввода
-   * @returns {Promise<{isEditing: Boolean, newIndex?: Number}>}
+   * @param {Object} store - Хранилище клиентов (Pinia store).
+   * @param {Array<Object>} store.clients - Массив клиентов.
+   * @param {number} store.currentClientId - ID текущего активного клиента.
+   * @param {Function} store.updateActiveClient - Метод обновления активного клиента в хранилище.
+   * @param {Function} store.addEmpty - Метод добавления нового пустого клиента.
+   * @param {Object} tempClients - Временное хранилище данных клиентов (реактивный объект).
+   * @param {Object} currentTempClient - Текущие данные временного клиента из формы.
+   * @param {Boolean} isEditing - Флаг, указывающий, находится ли форма в режиме редактирования.
+   * @param {Function} resetForm - Функция сброса формы (VeeValidate).
+   * @param {Function} validate - Функция валидации формы (VeeValidate).
+   * @param {Function} addInputMask - Функция для добавления маски ввода к полю даты.
+   * @returns {Promise<{isEditing: Boolean, newIndex?: Number}>} Промис с объектом, указывающим новый режим редактирования и опционально индекс нового клиента.
    */
   handleAddClientButtonClick = async (
     store,
@@ -377,14 +421,17 @@ export default class Clients {
 
   /**
    * Изменяет режим редактирования для клиента
-   * @param {Object} store - Хранилище клиентов
-   * @param {Object} tempClients - Временное хранилище клиентов
-   * @param {Object} currentTempClient - Текущий временный клиент
-   * @param {Boolean} isEditing - Текущий режим редактирования
-   * @param {Number} index - Индекс клиента
-   * @param {Function} resetForm - Функция сброса формы
-   * @param {Function} addInputMask - Функция добавления маски ввода
-   * @returns {Promise<{isEditing: Boolean, clientData: Object}>}
+   * @param {Object} store - Хранилище клиентов (Pinia store).
+   * @param {Array<Object>} store.clients - Массив клиентов.
+   * @param {number} store.currentClientId - ID текущего активного клиента.
+   * @param {Function} store.updateActiveClient - Метод обновления активного клиента в хранилище.
+   * @param {Object} tempClients - Временное хранилище данных клиентов (реактивный объект).
+   * @param {Object} currentTempClient - Текущие данные временного клиента из формы.
+   * @param {Boolean} isEditing - Текущий флаг режима редактирования.
+   * @param {Number} index - Индекс клиента, для которого переключается режим редактирования (начиная с 1).
+   * @param {Function} resetForm - Функция сброса формы (VeeValidate).
+   * @param {Function} addInputMask - Функция для добавления маски ввода к полю даты.
+   * @returns {Promise<{isEditing: Boolean, clientData: Object}>} Промис с объектом, указывающим новый режим редактирования и данные клиента для формы.
    */
   changeEdit = async (
     store,
@@ -417,9 +464,9 @@ export default class Clients {
 
   /**
    * Переключает режим редактирования
-   * @param {Boolean} value - Новое значение режима редактирования
-   * @param {Function} addInputMask - Функция добавления маски ввода
-   * @returns {Promise<Boolean>} Новое значение режима редактирования
+   * @param {Boolean} value - Новое значение режима редактирования (true - редактирование, false - просмотр).
+   * @param {Function} addInputMask - Функция добавления маски ввода для поля даты.
+   * @returns {Promise<Boolean>} Промис, который разрешается с новым значением режима редактирования.
    */
   toggleEditing = async (value, addInputMask) => {
     if (value === true) {
@@ -431,7 +478,8 @@ export default class Clients {
 
   /**
    * Добавляет маску ввода для поля даты рождения
-   * @param {Object} birthdayDate - Референс на поле даты рождения
+   * @param {Object} birthdayDate - Референс (Vue ref) на компонент поля ввода даты рождения (например, UiInput).
+   * @param {Object} birthdayDate.$el - DOM-элемент компонента.
    * @returns {void}
    */
   addInputMask = (birthdayDate) => {
@@ -455,13 +503,18 @@ export default class Clients {
   };
 
   /**
-   * Обрабатывает изменение actionType
-   * @param {Object} store - Хранилище клиентов
-   * @param {Object} tempClients - Временное хранилище клиентов
-   * @param {Object} actionType - Новый тип действия
-   * @param {Function} resetForm - Функция сброса формы
-   * @param {Function} addOneMoreClients - Функция добавления клиента
-   * @returns {Promise<{isEditing: Boolean}>}
+   * Обрабатывает изменение actionType (например, при открытии модального окна в режиме редактирования существующей семьи или добавления новой).
+   * @param {Object} store - Хранилище клиентов (Pinia store).
+   * @param {Function} store.reset - Метод сброса состояния хранилища.
+   * @param {Function} store.setClientOfEdit - Метод установки данных клиента для редактирования.
+   * @param {Object} tempClients - Временное хранилище данных клиентов (реактивный объект).
+   * @param {Object} actionType - Объект, описывающий тип действия и связанные данные.
+   * @param {string} actionType.type - Тип действия ('edit', 'add' и т.д.).
+   * @param {Object} [actionType.family] - Данные семьи, если применимо.
+   * @param {Array<Object>} [actionType.family.clients] - Список клиентов семьи.
+   * @param {Function} resetForm - Функция сброса формы (VeeValidate).
+   * @param {Function} addOneMoreClients - Функция добавления еще одного пустого клиента.
+   * @returns {Promise<{isEditing: Boolean}>} Промис с объектом, указывающим новый режим редактирования.
    */
   handleActionTypeChange = async (
     store,
@@ -489,6 +542,7 @@ export default class Clients {
       return { isEditing: true };
     }
 
+    // Для данных из поиска семьи или других источников семейных данных
     const familyClients = actionType?.family?.clients;
     if (familyClients && familyClients.length > 0) {
       familyClients.forEach((client, index) => {
@@ -502,20 +556,24 @@ export default class Clients {
       return { isEditing: false };
     }
 
+    // Если нет предзагруженных клиентов, добавляем пустого
     await addOneMoreClients();
     return { isEditing: true };
   };
 
   /**
    * Добавляет клиента в хранилище
-   * @param {Object} store - Хранилище клиентов
-   * @param {Object} tempClients - Временное хранилище клиентов
-   * @param {Object} currentTempClient - Текущий временный клиент
-   * @param {Number} activeIndex - Индекс активного клиента
-   * @param {Function} validate - Функция валидации формы
-   * @param {Function} toggleEditing - Функция переключения режима редактирования
-   * @param {Function} addOneMoreClients - Функция добавления клиента
-   * @returns {Promise<void>}
+   * @param {Object} store - Хранилище клиентов (Pinia store).
+   * @param {Array<Object>} store.clients - Массив клиентов.
+   * @param {Function} store.updateActiveClient - Метод обновления активного клиента в хранилище.
+   * @param {Object} tempClients - Временное хранилище данных клиентов (не используется в текущей реализации этой функции).
+   * @param {Object} currentTempClient - Текущие данные временного клиента из формы.
+   * @param {Number} activeIndex - Индекс активного клиента (начиная с 1).
+   * @param {Function} validate - Функция валидации формы (VeeValidate).
+   * @param {Function} toggleEditing - Функция переключения режима редактирования.
+   * @param {Function} addOneMoreClients - Функция добавления еще одного пустого клиента.
+   * @returns {Promise<void>} Промис завершается после выполнения операций.
+   * @throws {Error} Пробрасывает ошибку, если валидация не пройдена.
    */
   addClientToStore = async (
     store,
@@ -546,14 +604,16 @@ export default class Clients {
 
   /**
    * Удаляет клиента и активирует следующего
-   * @param {Object} store - Хранилище клиентов
-   * @param {Object} tempClients - Временное хранилище клиентов
-   * @param {Number} index - Индекс клиента для удаления
-   * @param {Function} resetForm - Функция сброса формы
-   * @param {Function} addInputMask - Функция добавления маски ввода
-   * @param {Function} toggleEditing - Функция переключения режима редактирования
-   * @param {Function} addOneMoreClients - Функция добавления клиента
-   * @returns {Promise<{isEditing: Boolean, showOneMoreClient: Boolean}>}
+   * @param {Object} store - Хранилище клиентов (Pinia store).
+   * @param {Function} store.deleteClient - Метод удаления клиента из хранилища.
+   * @param {Array<Object>} store.clients - Массив клиентов.
+   * @param {Object} tempClients - Временное хранилище данных клиентов (реактивный объект).
+   * @param {Number} index - Индекс клиента для удаления (начиная с 1).
+   * @param {Function} resetForm - Функция сброса формы (VeeValidate).
+   * @param {Function} addInputMask - Функция для добавления маски ввода к полю даты.
+   * @param {Function} toggleEditing - Функция переключения режима редактирования.
+   * @param {Function} addOneMoreClients - Функция добавления еще одного пустого клиента.
+   * @returns {Promise<{isEditing: Boolean, showOneMoreClient: Boolean}>} Промис с объектом, указывающим новый режим редактирования и флаг показа нового клиента.
    */
   deleteClient = async (
     store,

@@ -5,6 +5,7 @@ import { useField } from "vee-validate";
 
 /**
  * Класс для работы с пользователем: регистрация, вход, выход, управление данными пользователя.
+ * @class User
  */
 export default class User {
   /**
@@ -24,23 +25,32 @@ export default class User {
   }
 
   /**
-   * Устанавливает данные пользователя в хранилище.
+   * Устанавливает данные пользователя в хранилище (Pinia store).
+   * @private
+   * @async
    * @param {Object} user - Данные пользователя для сохранения.
+   * @returns {Promise<void>}
    */
   async _setUser(user) {
     this.userStore.set(user);
   }
 
   /**
-   * Очищает данные пользователя из хранилища.
+   * Очищает данные пользователя из хранилища (Pinia store).
+   * @private
+   * @async
+   * @returns {Promise<void>}
    */
   async _removeUser() {
     this.userStore.clear();
   }
 
   /**
-   * Устанавливает меню пользователя.
-   * @throws {Error} - Ошибка, если не удалось получить меню.
+   * Устанавливает меню пользователя в соответствующее хранилище (Pinia store).
+   * @private
+   * @async
+   * @returns {Promise<void>}
+   * @throws {Error} - Ошибка, если не удалось получить меню через сервис `menus`.
    */
   async _setMenu() {
     try {
@@ -52,9 +62,11 @@ export default class User {
   }
 
   /**
-   * Валидирует форму регистрации пользователя.
-   * @param {Event} eventSubmitForm - Событие отправки формы.
-   * @returns {Object} - Валидированные данные формы.
+   * Валидирует форму регистрации пользователя, используя `UserEntity`.
+   * @private
+   * @param {Event} eventSubmitForm - Событие отправки формы (submit event).
+   * @param {HTMLFormElement} eventSubmitForm.target - Элемент формы.
+   * @returns {Object} - Валидированные данные формы, готовые к отправке на сервер.
    */
   _validateUserSignUpForm(eventSubmitForm) {
     const currentFormData = new FormData(eventSubmitForm.target);
@@ -63,9 +75,11 @@ export default class User {
   }
 
   /**
-   * Валидирует форму входа пользователя.
-   * @param {Event} eventSubmitForm - Событие отправки формы.
-   * @returns {Object} - Валидированные данные формы.
+   * Валидирует форму входа пользователя, используя `UserEntity`.
+   * @private
+   * @param {Event} eventSubmitForm - Событие отправки формы (submit event).
+   * @param {HTMLFormElement} eventSubmitForm.target - Элемент формы.
+   * @returns {Object} - Валидированные данные формы, готовые к отправке на сервер.
    */
   _validateUserSignInForm(eventSubmitForm) {
     const currentFormData = new FormData(eventSubmitForm.target);
@@ -75,9 +89,10 @@ export default class User {
 
   /**
    * Получает текущего пользователя с сервера.
-   * @param {Object} params - Параметры запроса (опционально).
-   * @returns {Promise<Object|null>} - Данные текущего пользователя или null, если пользователь не авторизован.
-   * @throws {Error} - Ошибка, если запрос не удался.
+   * @async
+   * @param {Object} [params] - Параметры запроса (опционально, в текущей реализации не используются).
+   * @returns {Promise<Object|undefined>} - Данные текущего пользователя или undefined, если пользователь не авторизован (401) или произошла другая ошибка.
+   * @throws {Error} - Ошибка, если запрос не удался (кроме 401).
    */
   async getCurrent(params) {
     try {
@@ -86,7 +101,7 @@ export default class User {
       return response;
     } catch (error) {
       if (error.value.statusCode === 401) {
-        return;
+        return; // Используем return undefined для 401, а не return; чтобы было более явно
       } else {
         throw error;
       }
@@ -94,9 +109,11 @@ export default class User {
   }
 
   /**
-   * Обрабатывает успешный вход пользователя.
+   * Обрабатывает успешный вход пользователя: сохраняет данные, меню и показывает сообщение.
+   * @private
+   * @async
    * @param {Object} response - Ответ сервера после успешного входа.
-   * @returns {Object} - Данные пользователя после входа.
+   * @returns {Promise<Object>} - Данные пользователя (модель ответа на вход) после обработки.
    */
   async _handleSuccessfulSignIn(response) {
     const userSignInResponseModel =
@@ -106,49 +123,58 @@ export default class User {
 
     this._setMenu();
 
-    this.context.$showMessage(this.t("forms.signup"));
-
+    this.context.$showMessage(this.t("forms.login.success"));
     return userSignInResponseModel;
   }
 
   /**
-   * Обрабатывает серверные ошибки валидации.
-   * @param {Error} error - Ошибка, возникшая при входе.
+   * Обрабатывает серверные ошибки валидации для форм входа или регистрации.
+   * Показывает локализованное сообщение об ошибке.
+   * @private
+   * @param {Error} error - Объект ошибки от API.
+   * @param {Object} [error.data] - Данные ошибки.
+   * @param {Object} [error.data.error] - Объект с деталями ошибки.
+   * @param {string} [error.data.error.message] - Ключ сообщения об ошибке.
+   * @param {string} [error.data.error.userEmail] - Email пользователя (для подстановки в сообщение).
+   * @param {('login'|'signup')} type - Тип формы, для которой произошла ошибка.
+   * @throws {Error} - Пробрасывает оригинальную ошибку, если она не содержит `error.data.error.message`.
    */
   _handleServerValidationError(error, type) {
-    if (!error?.value?.data.error.message) {
+    if (!error?.data?.error?.message) {
+      // Уточнена проверка
       throw error;
     }
 
     this.context.$showError(
-      this.t(
-        `forms.${type}.validationErrors.${error?.value?.data.error.message}`,
-        { userEmail: error.value?.data.error.userEmail }
-      )
+      this.t(`forms.${type}.validationErrors.${error.data.error.message}`, {
+        userEmail: error.data.error.userEmail,
+      }),
     );
   }
 
   /**
    * Выполняет вход пользователя.
+   * @async
    * @param {Event} eventSubmitForm - Событие отправки формы входа.
-   * @returns {Promise<Object>} - Данные пользователя после успешного входа.
+   * @returns {Promise<Object|undefined>} - Данные пользователя после успешного входа или undefined в случае ошибки валидации.
    */
   async signIn(eventSubmitForm) {
     try {
       const userForm = this._validateUserSignInForm(eventSubmitForm);
-
       const response = await this.context.$api.user.signIn(userForm);
 
       return this._handleSuccessfulSignIn(response);
     } catch (error) {
-      this._handleServerValidationError(error, "signIn");
+      this._handleServerValidationError(error, "login");
+      return undefined; // Возвращаем undefined в случае ошибки валидации
     }
   }
 
   /**
    * Регистрирует нового пользователя.
+   * @async
    * @param {Event} eventSubmitForm - Событие отправки формы регистрации.
-   * @returns {Promise<Object>} - Ответ сервера после успешной регистрации.
+   * @returns {Promise<Object|undefined>} - Ответ сервера после успешной регистрации или undefined в случае ошибки валидации.
    */
   async create(eventSubmitForm) {
     try {
@@ -159,11 +185,14 @@ export default class User {
       return response;
     } catch (error) {
       this._handleServerValidationError(error, "signup");
+      return undefined; // Возвращаем undefined в случае ошибки валидации
     }
   }
 
   /**
-   * Выполняет выход пользователя.
+   * Выполняет выход пользователя: удаляет данные из API, очищает локальное хранилище и обновляет меню.
+   * @async
+   * @returns {Promise<void>}
    */
   async logout() {
     try {

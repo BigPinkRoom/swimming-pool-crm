@@ -6,6 +6,9 @@ import Abonements from "./modules/abonements";
 import Clients from "./modules/clients";
 import Relatives from "./modules/relatives";
 import Families from "./modules/families";
+import AbonementsTable from "./modules/abonementsTable";
+import Search from "./modules/search";
+import IndexPage from "./modules/indexPage";
 
 export default class Services {
   constructor(app) {
@@ -21,5 +24,8 @@ export default class Services {
     this.clients = new Clients(app);
     this.relatives = new Relatives(app);
     this.families = new Families(app);
+    this.abonementsTable = new AbonementsTable(app);
+    this.search = new Search(app);
+    this.indexPage = new IndexPage(app);
   }
 }
