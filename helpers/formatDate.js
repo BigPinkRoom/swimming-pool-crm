@@ -1,3 +1,10 @@
+/**
+ * Форматирует строку с датой в формат ДД.ММ.ГГГГ или ДД.ММ.ГГ.
+ *
+ * @param {string | Date} dateString - Строка с датой или объект Date для форматирования.
+ * @param {boolean} [shortYear=false] - Если true, год будет отображаться в сокращенном формате (ГГ), иначе в полном (ГГГГ). По умолчанию false.
+ * @returns {string} Отформатированная строка с датой. Возвращает пустую строку, если входная дата некорректна.
+ */
 export function formatDate(dateString, shortYear = false) {
   const date = new Date(dateString);
 

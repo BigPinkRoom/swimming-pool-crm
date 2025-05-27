@@ -1,3 +1,9 @@
+/**
+ * Рекурсивно преобразует все ключи объекта (или объектов в массиве) из snake_case в camelCase.
+ *
+ * @param {Object|Array<Object>} obj - Объект или массив объектов для преобразования.
+ * @returns {Object|Array<Object>} Новый объект или массив объектов с ключами в camelCase.
+ */
 export function transformKeysToCamelCase(obj) {
   function toCamelCase(str) {
     return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());

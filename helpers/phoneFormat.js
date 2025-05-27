@@ -1,16 +1,16 @@
 /**
- * Удаляет все нецифровые символы из телефона
- * @param {string} phone
- * @returns {string}
+ * Удаляет все нецифровые символы из телефонного номера.
+ * @param {string | undefined | null} phone - Строка с телефонным номером.
+ * @returns {string} Строка, содержащая только цифры из исходного телефонного номера. Если входная строка пуста, undefined или null, возвращает пустую строку.
  */
 export function unmaskPhone(phone) {
   return (phone || "").replace(/\D/g, "");
 }
 
 /**
- * Форматирует телефон в маску +7 (999) 123-45-67
- * @param {string} phone
- * @returns {string}
+ * Форматирует телефонный номер в маску +7 (XXX) XXX-XX-XX.
+ * @param {string | undefined | null} phone - Строка с телефонным номером (предпочтительно только цифры).
+ * @returns {string} Отформатированный телефонный номер. Если входная строка пуста, undefined или null, или содержит недостаточно цифр, возвращает частично отформатированный номер или пустую строку.
  */
 export function maskPhone(phone) {
   const digits = (phone || "").replace(/\D/g, "");

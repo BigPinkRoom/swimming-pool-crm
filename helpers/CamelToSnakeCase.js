@@ -1,3 +1,9 @@
+/**
+ * Рекурсивно преобразует все ключи объекта (или объектов в массиве) из camelCase в snake_case.
+ *
+ * @param {Object|Array<Object>} obj - Объект или массив объектов для преобразования.
+ * @returns {Object|Array<Object>} Новый объект или массив объектов с ключами в snake_case.
+ */
 export function transformKeysToSnakeCase(obj) {
   function toSnakeCase(str) {
     return str.replace(/([A-Z])/g, "_$1").toLowerCase();

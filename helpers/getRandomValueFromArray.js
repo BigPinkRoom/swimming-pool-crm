@@ -1,3 +1,10 @@
+/**
+ * Возвращает случайное значение из предоставленного массива.
+ *
+ * @param {Array<*>} possibleValues - Массив значений, из которого нужно выбрать случайный элемент.
+ * @returns {*} Случайный элемент из массива.
+ * @throws {Error} Если предоставленный массив пуст или не является массивом.
+ */
 export function getRandomValueFromArray(possibleValues) {
   // Проверка, что массив не пустой
   if (!possibleValues || possibleValues.length === 0) {
