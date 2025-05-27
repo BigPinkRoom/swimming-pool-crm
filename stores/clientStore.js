@@ -6,7 +6,8 @@ const clientsService = new Clients();
 const { createNewClient } = clientsService;
 
 /**
- * Стор для управления списком клиентов в приложении.
+ * @module stores/clientStore
+ * @description Стор для управления списком клиентов в приложении.
  * Использует Pinia для управления состоянием и предоставляет методы для добавления, обновления и удаления клиентов.
  */
 export const useClientsStore = defineStore("clients", () => {
@@ -18,24 +19,30 @@ export const useClientsStore = defineStore("clients", () => {
 
   /**
    * Реактивное значение текущего активного клиента (индекс, начиная с 1).
-   * @type {number|null}
+   * @type {import("vue").Ref<number|null>}
    */
   const currentClientId = ref(null);
 
   /**
    * Добавляет нового клиента в список.
+   * @param {Object} payload - Объект нового клиента.
    */
   function add(payload) {
     clients.push(payload);
   }
 
   /**
-   * Добавляет клиента из редактирования
+   * Добавляет клиента из режима редактирования.
+   * @param {Object} payload - Объект клиента.
    */
   function setClientOfEdit(payload) {
     clients.push(payload);
   }
 
+  /**
+   * Добавляет клиента и сбрасывает ID текущего клиента.
+   * @param {Object} payload - Объект клиента.
+   */
   function addClient(payload) {
     clients.push(payload);
     currentClientId.value = null;
@@ -43,7 +50,7 @@ export const useClientsStore = defineStore("clients", () => {
 
   /**
    * Добавляет нового пустого клиента в список и делает его активным.
-   * @returns {number} - Индекс нового клиента (начиная с 1)
+   * @returns {number} - Индекс нового клиента (начиная с 1).
    */
   const addEmpty = () => {
     const newClient = createNewClient();
@@ -55,8 +62,8 @@ export const useClientsStore = defineStore("clients", () => {
 
   /**
    * Обновляет данные активного клиента.
-   * @param {number} index - Индекс клиента (начиная с 1)
-   * @param {Object} currentTempClient - Временные данные клиента
+   * @param {number} index - Индекс клиента (начиная с 1).
+   * @param {Object} currentTempClient - Временные данные клиента.
    */
   const updateActiveClient = (index, currentTempClient) => {
     const zeroBasedIndex = index - 1;
@@ -72,7 +79,7 @@ export const useClientsStore = defineStore("clients", () => {
 
   /**
    * Удаляет клиента из списка по его индексу.
-   * @param {number} index - Индекс клиента (начиная с 1)
+   * @param {number} index - Индекс клиента (начиная с 1).
    */
   const deleteClient = (index) => {
     const zeroBasedIndex = index - 1;
@@ -89,7 +96,7 @@ export const useClientsStore = defineStore("clients", () => {
   };
 
   /**
-   * Сбрасывает стор
+   * Сбрасывает состояние хранилища, очищая список клиентов и ID текущего клиента.
    */
   const reset = () => {
     clients.length = 0;

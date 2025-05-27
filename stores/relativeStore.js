@@ -2,6 +2,10 @@ import { defineStore } from "pinia";
 import { reactive, ref } from "vue";
 import Relatives from "@/services/modules/relatives";
 
+/**
+ * @module stores/relativeStore
+ * @description Хранилище для управления данными о родственниках.
+ */
 export const useRelativesStore = defineStore("relatives", () => {
   // Инициализация сервиса родственников
   const { $services } = useNuxtApp();
@@ -18,24 +22,36 @@ export const useRelativesStore = defineStore("relatives", () => {
     updateActiveRelativeAfterDeletion,
   } = relativesService;
 
-  // Состояние: список родственников и типы родственников
+  /**
+   * Реактивный массив объектов родственников.
+   * @type {Array<Object>}
+   */
   const relatives = reactive([]);
+  /**
+   * Реактивный массив типов родственных связей.
+   * @type {import("vue").Ref<Array<Object>>}
+   */
   const relativesTypes = ref([]);
 
-  // Текущий активный ID родственника
+  /**
+   * Реактивное значение ID текущего активного родственника.
+   * Может быть числом или строкой (для временных ID).
+   * @type {import("vue").Ref<number|string|null>}
+   */
   const currentRelativeId = ref(null);
 
   /**
    * Устанавливает типы родственников.
-   * @param {Array} payload - Массив типов родственников.
+   * @param {Array<Object>} payload - Массив типов родственников.
    */
   const setRelativesTypes = (payload) => {
     relativesTypes.value = payload;
   };
 
   /**
-   * Добавляет нового пустого родственника в список.
-   * @returns {number} Временный индекс для идентификации родственника в UI
+   * Добавляет нового пустого родственника в список и устанавливает его как активного.
+   * В качестве временного ID используется индекс в массиве (начиная с 1).
+   * @returns {number} Временный индекс для идентификации родственника в UI.
    */
   const addEmpty = () => {
     // Создаем нового родственника без ID
@@ -53,8 +69,8 @@ export const useRelativesStore = defineStore("relatives", () => {
 
   /**
    * Обновляет данные активного родственника.
-   * @param {number|string} idOrIndex - ID или индекс родственника для обновления.
-   * @param {Object} currentTempRelative - Временный объект с новыми данными.
+   * @param {number|string} idOrIndex - ID или временный индекс родственника для обновления.
+   * @param {Object|import("vue").Ref<Object>} currentTempRelative - Временный объект или ref с новыми данными родственника.
    */
   const updateActiveRelative = (idOrIndex, currentTempRelative) => {
     console.log("Главный стор родственников", relatives);
@@ -90,8 +106,9 @@ export const useRelativesStore = defineStore("relatives", () => {
   };
 
   /**
-   * Удаляет родственника по ID.
-   * @param {number|string} id - ID родственника для удаления.
+   * Удаляет родственника по ID (или временному ID).
+   * После удаления переназначает ID и обновляет активного родственника.
+   * @param {number|string} id - ID или временный ID родственника для удаления.
    */
   const deleteRelative = (id) => {
     const index = findRelativeIndexById(relatives, id);
@@ -110,6 +127,7 @@ export const useRelativesStore = defineStore("relatives", () => {
 
   /**
    * Устанавливает данные родственника при редактировании.
+   * Добавляет родственника в список, если он содержит данные и ID (или relativeId).
    * @param {Object} payload - Данные родственника.
    */
   function setRelativeOfEdit(payload) {
@@ -140,8 +158,10 @@ export const useRelativesStore = defineStore("relatives", () => {
   }
 
   /**
-   * Форматирует родственников для отправки на сервер.
-   * @returns {Array} Массив родственников, готовый для отправки на сервер.
+   * Форматирует список родственников для отправки на сервер.
+   * Приводит поля к формату, ожидаемому бэкендом (например, `name` -> `relativeName`).
+   * Добавляет `relativeId` только если `id` существует и не является временным.
+   * @returns {Array<Object>} Массив родственников, готовый для отправки на сервер.
    */
   const getFormattedRelativesForBackend = () => {
     return relatives.map((relative) => {
@@ -163,7 +183,7 @@ export const useRelativesStore = defineStore("relatives", () => {
   };
 
   /**
-   * Сбрасывает состояние хранилища.
+   * Сбрасывает состояние хранилища: очищает список родственников и ID текущего активного родственника.
    */
   const reset = () => {
     relatives.splice(0, relatives.length);
