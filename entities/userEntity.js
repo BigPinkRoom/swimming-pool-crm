@@ -9,7 +9,8 @@ import {
 export default class UserEntity {
   /**
    * Создает экземпляр класса UserEntity.
-   * @param {Object} context - Контекст приложения (Nuxt контекст).
+   * @param {Object} options - Опции для конструктора.
+   * @param {Object} options.context - Контекст приложения (Nuxt контекст).
    */
   constructor({ context }) {
     this.context = context;
@@ -20,9 +21,11 @@ export default class UserEntity {
 
   /**
    * Валидирует поля из FormData с использованием указанной схемы Zod.
+   * @private
    * @param {FormData} currentFormData - Объект FormData, содержащий данные для валидации.
-   * @param {ZodSchema} schema - Схема валидации Zod.
+   * @param {import('zod').ZodSchema} schema - Схема валидации Zod.
    * @returns {Object} Объект с валидированными данными.
+   * @throws {import('zod').ZodError} Если валидация не удалась.
    */
   _validateFormData(currentFormData, schema) {
     try {
@@ -42,6 +45,7 @@ export default class UserEntity {
 
   /**
    * Устанавливает валидированные данные в текущий объект FormData.
+   * @private
    * @param {FormData} currentFormData - Исходный объект FormData.
    * @param {Object} validatedFormData - Объект с валидированными данными.
    * @returns {FormData} Новый объект FormData с валидированными данными.
@@ -58,7 +62,7 @@ export default class UserEntity {
    * Создает модель данных для входа пользователя, валидируя и форматируя FormData.
    * @param {FormData} currentFormData - Исходный объект FormData с данными пользователя.
    * @returns {FormData} Новый объект FormData с валидированными данными.
-   * @throws {Object} Объект с ошибками валидации в формате { fieldName: errorMessage }.
+   * @throws {import('zod').ZodError} Объект с ошибками валидации, если валидация не удалась.
    */
   createUserSignInModel(currentFormData) {
     const schema = userSignInValidationSchema(this.t);
@@ -68,7 +72,7 @@ export default class UserEntity {
 
       const validatedFormData = this._setValidatedFormData(
         currentFormData,
-        validatedFields
+        validatedFields,
       );
 
       return validatedFormData;
@@ -79,8 +83,25 @@ export default class UserEntity {
 
   /**
    * Создает модель ответа для входа пользователя на основе серверного ответа.
-   * @param {Object} response - Ответ сервера с данными пользователя.
+   * @param {Object} response - Ответ сервера.
+   * @param {Object} response.user - Данные пользователя от сервера.
+   * @param {string} response.user.user_id - ID пользователя.
+   * @param {string} response.user.data_create - Дата создания пользователя.
+   * @param {string} response.user.email - Email пользователя.
+   * @param {string} response.user.surname - Фамилия пользователя.
+   * @param {string} response.user.name - Имя пользователя.
+   * @param {string} response.user.patronymic - Отчество пользователя.
+   * @param {string} response.user.user_role - Роль пользователя.
+   * @param {string} response.user.branch - Филиал пользователя.
    * @returns {Object} Объект с данными пользователя в удобном формате.
+   * @property {string} userId - ID пользователя.
+   * @property {string} dataCreate - Дата создания пользователя.
+   * @property {string} email - Email пользователя.
+   * @property {string} surname - Фамилия пользователя.
+   * @property {string} name - Имя пользователя.
+   * @property {string} patronymic - Отчество пользователя.
+   * @property {string} userRole - Роль пользователя.
+   * @property {string} branch - Филиал пользователя.
    */
   createUserSignInResponseModel(response) {
     return {
@@ -99,7 +120,7 @@ export default class UserEntity {
    * Создает модель данных для регистрации пользователя, валидируя и форматируя FormData.
    * @param {FormData} formDataRaw - Исходный объект FormData с данными пользователя для регистрации.
    * @returns {FormData} Новый объект FormData с валидированными данными.
-   * @throws {Object} Объект с ошибками валидации в формате { fieldName: errorMessage }.
+   * @throws {import('zod').ZodError} Объект с ошибками валидации, если валидация не удалась.
    */
   createUserSignUpModel(formDataRaw) {
     const formData = formDataRaw; // Сделать через lodash cloneDeep
@@ -110,7 +131,7 @@ export default class UserEntity {
 
       const validatedFormData = this._setValidatedFormData(
         formData,
-        validatedFields
+        validatedFields,
       );
 
       return validatedFormData;
